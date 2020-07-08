@@ -418,16 +418,16 @@ _C.DETECTION.ROI_XFORM_RESOLUTION = 7
 _C.AVA = CfgNode()
 
 # Directory path of frames.
-_C.AVA.FRAME_DIR = "/mnt/fair-flash3-east/ava_trainval_frames.img/"
+_C.AVA.FRAME_DIR = "/home/aicsvidhoi1/SlowFast/slowfast/datasets/ava/frames"
 
 # Directory path for files of frame lists.
 _C.AVA.FRAME_LIST_DIR = (
-    "/mnt/vol/gfsai-flash3-east/ai-group/users/haoqifan/ava/frame_list/"
+    "/home/aicsvidhoi1/SlowFast/slowfast/datasets/ava/frame_lists"
 )
 
 # Directory path for annotation files.
 _C.AVA.ANNOTATION_DIR = (
-    "/mnt/vol/gfsai-flash3-east/ai-group/users/haoqifan/ava/frame_list/"
+    "/home/aicsvidhoi1/SlowFast/slowfast/datasets/ava/annotations-slowfast"
 )
 
 # Filenames of training samples list files.
