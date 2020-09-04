@@ -16,3 +16,56 @@ runs_ava/*
 build/*
 
 slowfast.egg-info/*
+
+.ipynb_checkpoints
+.vs_code
+
+__pycache__
+_ext
+*.pyc
+*.pyd
+*.so
+
+# Below for detectron2_repo
+
+detectron2_repo/build
+detectron2_repo/output
+detectron2_repo/instant_test_output
+detectron2_repo/inference_test_output
+
+detectron2_repo/*.jpg
+detectron2_repo/*.png
+detectron2_repo/*.txt
+detectron2_repo/*.json
+detectron2_repo/*.diff
+
+# compilation and distribution
+detectron2_repo/detectron2.egg-info/
+detectron2_repo/build/
+detectron2_repo/dist/
+detectron2_repo/wheels/
+
+# pytorch/python/numpy formats
+detectron2_repo/*.pth
+detectron2_repo/*.pkl
+detectron2_repo/*.npy
+
+# ipython/jupyter notebooks
+detectron2_repo/*.ipynb
+detectron2_repo/**/.ipynb_checkpoints/
+
+# Editor temporaries
+detectron2_repo/*.swn
+detectron2_repo/*.swo
+detectron2_repo/*.swp
+detectron2_repo/*~
+
+# editor settings
+detectron2_repo/.idea
+detectron2_repo/.vscode
+
+# project dirs
+detectron2_repo/detectron2/model_zoo/configs
+detectron2_repo/datasets
+detectron2_repo/projects/*/datasets
+detectron2_repo/models
