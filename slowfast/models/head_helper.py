@@ -5,7 +5,419 @@
 
 import torch
 import torch.nn as nn
+from typing import Dict, List, Optional, Tuple, Union
 from detectron2.layers import ROIAlign
+from detectron2.layers import Conv2d, Linear, ShapeSpec
+from detectron2.layers import cat
+from detectron2.modeling.poolers import ROIPooler
+from detectron2.structures import Boxes, Instances
+from .fast_rcnn import HoiOutputLayers
+from .box_head import build_hoi_head
+
+class HOIHead(nn.Module):
+    def __init__(self, cfg, resolution, scale_factor, aligned):
+        # self.in_features = cfg.MODEL.ROI_HEADS.IN_FEATURES
+        super(HOIHead, self).__init__()
+
+        # import pdb; pdb.set_trace()
+
+        self.hoi_on = cfg.MODEL.HOI_ON
+        if not self.hoi_on:
+            return
+        # fmt: off
+        pooler_resolution      = cfg.MODEL.HOI_BOX_HEAD.POOLER_RESOLUTION
+        # pooler_scales          = tuple(1.0 / input_shape[k].stride for k in self.in_features)
+        sampling_ratio         = cfg.MODEL.HOI_BOX_HEAD.POOLER_SAMPLING_RATIO
+        pooler_type            = cfg.MODEL.HOI_BOX_HEAD.POOLER_TYPE
+        allow_person_to_person = cfg.MODEL.HOI_BOX_HEAD.ALLOW_PERSON_TO_PERSON
+        # fmt: on
+        self.allow_person_to_person = allow_person_to_person
+
+        '''
+        # If StandardHOROIHeads is applied on multiple feature maps (as in FPN),
+        # then we share the same predictors and therefore the channel counts must be the same
+        in_channels = [input_shape[f].channels for f in self.in_features]
+        # Check all channel counts are equal
+        assert len(set(in_channels)) == 1, in_channels
+        in_channels = in_channels[0]
+        '''
+
+        in_channels = cfg.MODEL.HOI_BOX_HEAD.IN_CHANNELS
+        
+        self.hoi_pooler = ROIPooler(
+            output_size=pooler_resolution,
+            scales=[1.0 / scale_factor], # pooler_scales,
+            sampling_ratio=sampling_ratio,
+            pooler_type=pooler_type,
+            not_box_lists=True
+        )
+
+        # self.hoi_pooler = ROIAlign(
+        #     resolution,
+        #     spatial_scale=1.0 / scale_factor,
+        #     sampling_ratio=0,
+        #     aligned=aligned,
+        # )
+        # self.add_module("s{}_roi".format(pathway), roi_align)
+
+        self.hoi_head = build_hoi_head(
+            cfg, ShapeSpec(channels=in_channels, height=pooler_resolution, width=pooler_resolution)
+        )
+        
+        # hoi_predictor_input_shape = self.hoi_head.output_shape
+        # if cfg.MODEL.USE_TRAJECTORIES:
+        #     hoi_predictor_input_shape = ShapeSpec(
+        #         channels=hoi_predictor_input_shape.channels + cfg.DATA.NUM_FRAMES * 4,
+        #         height=hoi_predictor_input_shape.height,
+        #         width=hoi_predictor_input_shape.width
+        #     )
+        #     print(hoi_predictor_input_shape)
+        #     import pdb; pdb.set_trace()
+        self.hoi_predictor = HoiOutputLayers(cfg, self.hoi_head.output_shape)
+
+    @torch.no_grad()
+    def construct_hopairs(self, bboxes, obj_classes, obj_classes_lengths, action_labels, gt_obj_classes=None, gt_obj_classes_lengths=None, trajectories=None):
+        """
+        Prepare person-object pairs to be used to train HOI heads.
+        At training, it returns union regions of person-object proposals and assigns
+            training labels. It returns ``self.hoi_batch_size_per_image`` random samples
+            from pesron-object pairs, with a fraction of positives that is no larger than
+            ``self.hoi_positive_sample_fraction``.
+        At inference, it returns union regions of predicted person boxes and object boxes.
+
+        Args:
+            instances (list[Instances]):
+                At training, proposals_with_gt. See ``self.label_and_sample_proposals``
+                At inference, predicted box instances. See ``self._forward_box``
+
+        Returns:
+            list[Instances]:
+                length `N` list of `Instances`s containing the human-object pairs.
+                Each `Instances` has the following fields:
+
+                - union_boxes: the union region of person boxes and object boxes
+                - person_boxes: person boxes in a matched sequences with union_boxes
+                - object_boxes: object boxes in a matched sequences with union_boxes
+                - gt_actions: the ground-truth actions that the pair is assigned.
+                    Used for training HOI head.
+                - person_box_scores: person box scores from box instances. Used at inference.
+                - object_box_scores: object box scores from box instances. Used at inference.
+                - object_box_classes: predicted box classes from box instances. Used at inference.
+        """
+        
+        hopairs = []
+        if gt_obj_classes_lengths is not None:
+            end_idx_gt = 0
+            gt_obj_classes_lengths = gt_obj_classes_lengths.tolist()
+        end_idx = 0
+        end_idx_action_labels = 0
+        obj_classes_lengths = obj_classes_lengths.tolist()
+        for idx, length in enumerate(obj_classes_lengths): # same as proposal_lengths
+            # for gt lengths
+            if gt_obj_classes is not None and gt_obj_classes_lengths is not None:
+                start_idx_gt = end_idx_gt
+                length_gt = gt_obj_classes_lengths[idx]
+                end_idx_gt += length_gt
+                obj_classes_per_image_gt = gt_obj_classes[start_idx_gt:end_idx_gt]
+
+                start_idx_action_labels = end_idx_action_labels
+                end_idx_action_labels += length_gt ** 2
+                action_labels_per_image = action_labels[start_idx_action_labels:end_idx_action_labels]
+
+                person_idxs = (obj_classes_per_image_gt[:, 1] == 0).nonzero().squeeze(1)
+                object_idxs = (obj_classes_per_image_gt[:, 1] != 0).nonzero().squeeze(1)
+                if self.allow_person_to_person:
+                    # Allow person to person interactions. Then all boxes will be used.
+                    object_idxs = torch.arange(end_idx_gt - start_idx_gt, device=object_idxs.device)
+                num_pboxes, num_oboxes = person_idxs.numel(), object_idxs.numel()
+                person_idxs = person_idxs[:, None].repeat(1, num_oboxes).flatten()
+                object_idxs = object_idxs[None, :].repeat(num_pboxes, 1).flatten()
+                action_labels_per_image = torch.cat([
+                    action_labels_per_image[i * length_gt + j, 2:].view(1, -1) for i, j in zip(person_idxs, object_idxs)
+                ])
+                keep = (person_idxs != object_idxs).nonzero().squeeze(1)
+                gt_bbox_pair_ids = [torch.as_tensor([i, j]) for i, j in zip(person_idxs, object_idxs)]
+                gt_bbox_pair_ids = torch.cat([gt_bbox_pair_ids[i].view(1, -1) for i in keep.tolist()])
+                action_labels_per_image = action_labels_per_image[keep]
+                hopairs_per_image = {
+                    'action_labels': action_labels_per_image,
+                    'gt_bbox_pair_ids': gt_bbox_pair_ids
+                }
+                action_labels_not_included = False
+            else:
+                hopairs_per_image = {}
+                action_labels_not_included = True
+
+            # for proposal lengths
+            start_idx = end_idx
+            end_idx += length
+            boxes_per_image = bboxes[start_idx:end_idx, 1:]
+            if trajectories is not None:
+                trajectories_per_image = trajectories[start_idx:end_idx, 1:]
+            obj_classes_per_image = obj_classes[start_idx:end_idx]
+
+            if action_labels_not_included:
+                start_idx_action_labels = end_idx_action_labels
+                end_idx_action_labels += length ** 2
+                action_labels_per_image = action_labels[start_idx_action_labels:end_idx_action_labels]
+
+            person_idxs = (obj_classes_per_image[:, 1] == 0).nonzero().squeeze(1)
+            object_idxs = (obj_classes_per_image[:, 1] != 0).nonzero().squeeze(1)
+
+            if self.allow_person_to_person:
+                # Allow person to person interactions. Then all boxes will be used.
+                object_idxs = torch.arange(end_idx - start_idx, device=object_idxs.device)
+
+            num_pboxes, num_oboxes = person_idxs.numel(), object_idxs.numel()
+            
+            union_boxes = _pairwise_union_regions(boxes_per_image[person_idxs], boxes_per_image[object_idxs])
+            # Indexing person/object boxes in a matched order.
+            person_idxs = person_idxs[:, None].repeat(1, num_oboxes).flatten()
+            object_idxs = object_idxs[None, :].repeat(num_pboxes, 1).flatten()
+            
+            # Remove self-to-self interaction.
+            keep = (person_idxs != object_idxs).nonzero().squeeze(1)
+            
+            if action_labels_not_included:
+                action_labels_per_image = torch.cat([
+                    action_labels_per_image[i * length + j, 2:].view(1, -1) for i, j in zip(person_idxs, object_idxs)
+                ])
+                hopairs_per_image['action_labels'] = action_labels_per_image[keep]
+
+            if len(keep) != 0:
+                bbox_pair_ids = [torch.as_tensor([i, j]) for i, j in zip(person_idxs, object_idxs)]
+                bbox_pair_ids = torch.cat([bbox_pair_ids[i].view(1, -1) for i in keep.tolist()])
+            else:
+                bbox_pair_ids = torch.tensor([])
+            union_boxes = union_boxes[keep]
+            person_idxs = person_idxs[keep]
+            object_idxs = object_idxs[keep]
+
+            hopairs_per_image['union_boxes'] = union_boxes
+            hopairs_per_image['person_boxes'] = boxes_per_image[person_idxs]
+            hopairs_per_image['object_boxes'] = boxes_per_image[object_idxs]
+            hopairs_per_image['bbox_pair_ids'] = bbox_pair_ids
+
+            if trajectories is not None:
+                hopairs_per_image['person_trajectories'] = trajectories_per_image[person_idxs]
+                hopairs_per_image['object_trajectories'] = trajectories_per_image[object_idxs]
+
+            # if self.training:
+            hopairs_per_image['person_idxs'] = person_idxs
+            hopairs_per_image['object_idxs'] = object_idxs
+
+            hopairs.append(hopairs_per_image)
+
+        return hopairs
+    
+    def forward(self, features, bboxes, obj_classes, obj_classes_lengths, action_labels, gt_obj_classes=None, gt_obj_classes_lengths=None, trajectories=None):
+        # (Pdb) features.shape
+        # torch.Size([16, 2304, 14, 14])
+        # (Pdb) bboxes.shape
+        # torch.Size([59, 5])
+        # (Pdb) obj_classes.shape
+        # torch.Size([59, 2])
+        # (Pdb) bboxes[:5]
+        # tensor([[  0.0000, 223.0000, 135.6844, 223.0000, 157.5156],
+        #         [  0.0000, 206.4203, 141.9219, 222.0141, 159.0750],
+        #         [  0.0000,   0.0000, 130.2266,  73.8734, 211.3141],
+        #         [  1.0000,   0.0000,  85.0000,   0.0000, 223.0000],
+        #         [  1.0000,   0.0000, 183.7000,  67.7500, 223.0000]], device='cuda:0')
+        # (Pdb) obj_classes[:5]
+        # tensor([[0., 0.],
+        #         [0., 0.],
+        #         [0., 0.],
+        #         [1., 0.],
+        #         [1., 0.]], device='cuda:0')
+        hopairs = self.construct_hopairs(bboxes, obj_classes, obj_classes_lengths, action_labels, gt_obj_classes, gt_obj_classes_lengths, trajectories)
+        
+        # features = [features[f] for f in self.in_features]
+        union_features  = self.hoi_pooler([features], [x['union_boxes'] for x in hopairs])
+        # (Pdb) union_features.shape
+        # torch.Size([96, 2304, 7, 7])
+        person_features = self.hoi_pooler([features], [x['person_boxes'] for x in hopairs])
+        object_features = self.hoi_pooler([features], [x['object_boxes'] for x in hopairs])
+
+        union_features  = self.hoi_head(union_features) # torch.Size([96, 512])
+        person_features = self.hoi_head(person_features)
+        object_features = self.hoi_head(object_features)
+
+        if trajectories is not None:
+            person_trajectories = torch.cat([x['person_trajectories'] for x in hopairs]) # torch.Size([96, 128])
+            object_trajectories = torch.cat([x['object_trajectories'] for x in hopairs])
+            
+            person_features = torch.cat((person_features, person_trajectories), dim=1)
+            object_features = torch.cat((object_features, object_trajectories), dim=1)
+        
+        hoi_predictions = self.hoi_predictor(union_features, person_features, object_features)
+
+        del union_features, person_features, object_features, features
+
+        if gt_obj_classes is None:
+            return hoi_predictions, cat([x['action_labels'] for x in hopairs], dim=0), torch.cat([x['bbox_pair_ids'] for x in hopairs])
+        else:
+            return hoi_predictions, cat([x['action_labels'] for x in hopairs], dim=0), torch.cat([x['bbox_pair_ids'] for x in hopairs]), torch.cat([x['gt_bbox_pair_ids'] for x in hopairs]) # , hopairs
+
+def _pairwise_union_regions(boxes1, boxes2):
+    """
+    Given two lists of boxes of size N and M, compute the union regions between
+    all N x M pairs of boxes. The box order must be (xmin, ymin, xmax, ymax).
+
+    Args:
+        boxes1, boxes2 (Boxes): two `Boxes`. Contains N & M boxes, respectively.
+
+    Returns:
+        unions: Boxes
+    """
+    
+    X1 = torch.min(boxes1[:, None, 0], boxes2[:, 0]).flatten()
+    Y1 = torch.min(boxes1[:, None, 1], boxes2[:, 1]).flatten()
+    X2 = torch.max(boxes1[:, None, 2], boxes2[:, 2]).flatten()
+    Y2 = torch.max(boxes1[:, None, 3], boxes2[:, 3]).flatten()
+
+    unions = torch.stack([X1, Y1, X2, Y2], dim=1)
+    # unions = Boxes(unions) # BoxMode.XYXY_ABS
+
+    return unions
+
+
+class ResNetPoolHead(nn.Module):
+    """
+    ResNe(X)t HoI head.
+    """
+    def __init__(
+        self,
+        dim_in,
+        num_classes,
+        pool_size,
+        is_baseline=False,
+    ):
+        """
+        The `__init__` method of any subclass should also contain these
+            arguments.
+        ResNetRoIHead takes p pathways as input where p in [1, infty].
+
+        Args:
+            dim_in (list): the list of channel dimensions of the p inputs to the
+                ResNetHead.
+            num_classes (int): the channel dimensions of the p outputs to the
+                ResNetHead.
+            pool_size (list): the list of kernel sizes of p spatial temporal
+                poolings, temporal pool kernel size, spatial pool kernel size,
+                spatial pool kernel size in order.
+            resolution (list): the list of spatial output size from the ROIAlign.
+            scale_factor (list): the list of ratio to the input boxes by this
+                number.
+            dropout_rate (float): dropout rate. If equal to 0.0, perform no
+                dropout.
+            act_func (string): activation function to use. 'softmax': applies
+                softmax on the output. 'sigmoid': applies sigmoid on the output.
+            aligned (bool): if False, use the legacy implementation. If True,
+                align the results more perfectly.
+        Note:
+            Given a continuous coordinate c, its two neighboring pixel indices
+            (in our pixel model) are computed by floor (c - 0.5) and ceil
+            (c - 0.5). For example, c=1.3 has pixel neighbors with discrete
+            indices [0] and [1] (which are sampled from the underlying signal at
+            continuous coordinates 0.5 and 1.5). But the original roi_align
+            (aligned=False) does not subtract the 0.5 when computing neighboring
+            pixel indices and therefore it uses pixels with a slightly incorrect
+            alignment (relative to our pixel model) when performing bilinear
+            interpolation.
+            With `aligned=True`, we first appropriately scale the ROI and then
+            shift it by -0.5 prior to calling roi_align. This produces the
+            correct neighbors; It makes negligible differences to the model's
+            performance if ROIAlign is used together with conv layers.
+        """
+        super(ResNetPoolHead, self).__init__()
+        assert (
+            len({len(pool_size), len(dim_in)}) == 1
+        ), "pathway dimensions are not consistent."
+        self.num_pathways = len(pool_size)
+        self.is_baseline = is_baseline
+
+        for pathway in range(self.num_pathways):
+            if pool_size[pathway] is None:
+                temporal_pool = nn.AdaptiveAvgPool3d((1, 1, 1))
+            else:
+                temporal_pool = nn.AvgPool3d(
+                    [pool_size[pathway][0], 1, 1], stride=1
+                )
+            self.add_module("s{}_tpool".format(pathway), temporal_pool)
+            
+            '''
+            roi_align = ROIAlign(
+                resolution[pathway],
+                spatial_scale=1.0 / scale_factor[pathway],
+                sampling_ratio=0,
+                aligned=aligned,
+            )
+            self.add_module("s{}_roi".format(pathway), roi_align)
+
+            spatial_pool = nn.MaxPool2d(resolution[pathway], stride=1)
+            self.add_module("s{}_spool".format(pathway), spatial_pool)
+            '''
+
+        '''
+        if dropout_rate > 0.0:
+            self.dropout = nn.Dropout(dropout_rate)
+        
+        # Perform FC in a fully convolutional manner. The FC layer will be
+        # initialized with a different std comparing to convolutional layers.
+        self.projection = nn.Linear(sum(dim_in), num_classes, bias=True)
+
+        # Softmax for evaluation and testing.
+        if act_func == "softmax":
+            self.act = nn.Softmax(dim=4)
+        elif act_func == "sigmoid":
+            self.act = nn.Sigmoid()
+        else:
+            raise NotImplementedError(
+                "{} is not supported as an activation"
+                "function.".format(act_func)
+            )
+        '''
+
+    def forward(self, inputs):
+        assert (
+            len(inputs) == self.num_pathways
+        ), "Input tensor does not contain {} pathway".format(self.num_pathways)
+        pool_out = []
+        # import pdb; pdb.set_trace()
+        # (Pdb) inputs[0].shape
+        # torch.Size([batch_size, 2048, 8, 14, 14])
+        # (Pdb) inputs[1].shape
+        # torch.Size([batch_size, 256, 32, 14, 14])
+        for pathway in range(self.num_pathways):
+            t_pool = getattr(self, "s{}_tpool".format(pathway)) # AvgPool3d(kernel_size=[8(or 32), 1, 1])
+            out = t_pool(inputs[pathway]) # torch.Size([batch_size, 2048, 8 -> 1, 14, 14]) or torch.Size([batch_size, 256, 32 -> 1, 14, 14])
+            
+            if not self.is_baseline:
+                assert out.shape[2] == 1
+                out = torch.squeeze(out, 2) # -> torch.Size([batch_size, 2048, 14, 14]) or torch.Size([batch_size, 256, 14, 14])
+
+            '''
+            roi_align = getattr(self, "s{}_roi".format(pathway)) # ROIAlign(output_size=[7,7])
+            out = roi_align(out, bboxes) # torch.Size([nb_bboxes, 2048(or 256), 7, 7])
+
+            s_pool = getattr(self, "s{}_spool".format(pathway)) # MaxPool2d(kernel_size=[7, 7])
+            pool_out.append(s_pool(out)) # torch.Size([nb_bboxes, 2048(or 256), 1, 1])
+            '''
+            pool_out.append(out)
+    
+        # B C H W.
+        x = torch.cat(pool_out, 1) # torch.Size([nb_bboxes, 2304(2048+256), 14, 14])
+        
+        '''
+        # Perform dropout.
+        if hasattr(self, "dropout"):
+            x = self.dropout(x)
+
+        x = x.view(x.shape[0], -1)
+        x = self.projection(x) # Linear(in_features=2304, out_features=80, bias=True)
+        x = self.act(x) # Sigmoid()
+        '''
+        return x
 
 
 class ResNetRoIHead(nn.Module):
@@ -79,6 +491,7 @@ class ResNetRoIHead(nn.Module):
                 aligned=aligned,
             )
             self.add_module("s{}_roi".format(pathway), roi_align)
+
             spatial_pool = nn.MaxPool2d(resolution[pathway], stride=1)
             self.add_module("s{}_spool".format(pathway), spatial_pool)
 
@@ -105,28 +518,34 @@ class ResNetRoIHead(nn.Module):
             len(inputs) == self.num_pathways
         ), "Input tensor does not contain {} pathway".format(self.num_pathways)
         pool_out = []
+        # import pdb; pdb.set_trace()
+        # (Pdb) inputs[0].shape
+        # torch.Size([batch_size, 2048, 8, 14, 14])
+        # (Pdb) inputs[1].shape
+        # torch.Size([batch_size, 256, 32, 14, 14])
         for pathway in range(self.num_pathways):
-            t_pool = getattr(self, "s{}_tpool".format(pathway))
-            out = t_pool(inputs[pathway])
+            t_pool = getattr(self, "s{}_tpool".format(pathway)) # AvgPool3d(kernel_size=[8(or 32), 1, 1])
+            out = t_pool(inputs[pathway]) # torch.Size([batch_size, 2048, 8 -> 1, 14, 14]) or torch.Size([batch_size, 256, 32 -> 1, 14, 14])
             assert out.shape[2] == 1
-            out = torch.squeeze(out, 2)
+            out = torch.squeeze(out, 2) # -> torch.Size([batch_size, 2048, 14, 14]) or torch.Size([batch_size, 256, 14, 14])
 
-            roi_align = getattr(self, "s{}_roi".format(pathway))
-            out = roi_align(out, bboxes)
+            roi_align = getattr(self, "s{}_roi".format(pathway)) # ROIAlign(output_size=[7,7])
+            # bboxes = tensor([[0., 0., 1., 0., 1.]], device='cuda:0')
+            out = roi_align(out, bboxes) # torch.Size([nb_bboxes, 2048(or 256), 7, 7])
 
-            s_pool = getattr(self, "s{}_spool".format(pathway))
-            pool_out.append(s_pool(out))
+            s_pool = getattr(self, "s{}_spool".format(pathway)) # MaxPool2d(kernel_size=[7, 7])
+            pool_out.append(s_pool(out)) # torch.Size([nb_bboxes, 2048(or 256), 1, 1])
 
         # B C H W.
-        x = torch.cat(pool_out, 1)
+        x = torch.cat(pool_out, 1) # torch.Size([nb_bboxes, 2304(2048+256), 1, 1])
 
         # Perform dropout.
         if hasattr(self, "dropout"):
             x = self.dropout(x)
 
         x = x.view(x.shape[0], -1)
-        x = self.projection(x)
-        x = self.act(x)
+        x = self.projection(x) # Linear(in_features=2304, out_features=80, bias=True)
+        x = self.act(x) # Sigmoid()
         return x
 
 

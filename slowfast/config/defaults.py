@@ -99,6 +99,10 @@ _C.TEST.NUM_SPATIAL_CROPS = 3
 # Checkpoint types include `caffe2` or `pytorch`.
 _C.TEST.CHECKPOINT_TYPE = "pytorch"
 
+# A value chosen to keep the maximum number of HOI interaction per image.
+# A large value may increase mAP but significantly slows down inference.
+_C.TEST.INTERACTIONS_PER_IMAGE = 200
+
 
 # -----------------------------------------------------------------------------
 # ResNet options
@@ -135,6 +139,9 @@ _C.RESNET.SPATIAL_STRIDES = [[1], [2], [2], [2]]
 
 # Size of dilation on different res stages.
 _C.RESNET.SPATIAL_DILATIONS = [[1], [1], [1], [1]]
+
+# Training Resnet from scratch
+_C.RESNET.SCRATCH = False
 
 
 # -----------------------------------------------------------------------------
@@ -182,7 +189,7 @@ _C.MODEL.NUM_CLASSES = 400
 _C.MODEL.LOSS_FUNC = "cross_entropy"
 
 # Model architectures that has one single pathway.
-_C.MODEL.SINGLE_PATHWAY_ARCH = ["c2d", "i3d", "slow"]
+_C.MODEL.SINGLE_PATHWAY_ARCH = ["c2d", "i3d", "slow", "baseline"]
 
 # Model architectures that has multiple pathways.
 _C.MODEL.MULTI_PATHWAY_ARCH = ["slowfast"]
@@ -196,6 +203,59 @@ _C.MODEL.FC_INIT_STD = 0.01
 # Activation layer for the output head.
 _C.MODEL.HEAD_ACT = "softmax"
 
+# -----------------------------------------------------------------------------
+# Model options for HOI
+# ----------------------------------------------------------------------------- 
+_C.MODEL.HOI_ON = True
+
+_C.MODEL.HOI_BOX_HEAD = CfgNode()
+
+# Options for HOI_BOX_HEAD models: HOIRCNNConvFCHead,
+_C.MODEL.HOI_BOX_HEAD.NAME = ""
+_C.MODEL.HOI_BOX_HEAD.NUM_FC = 2
+
+# Number of action classes
+_C.MODEL.HOI_BOX_HEAD.NUM_ACTIONS = 50
+
+# Minimum score threshold (assuming scores in a [0, 1] range); a value chosen to
+# balance obtaining high recall with not having too many low precision detections
+# that will slow down inference post processing steps (like NMS)
+# A default threshold of 0.0 increases AP by ~0.2-0.3 but significantly slows down inference.
+_C.MODEL.HOI_BOX_HEAD.HOI_SCORE_THRESH_TEST = 0.001
+
+# Hidden layer dimension for FC layers in the RoI box head
+_C.MODEL.HOI_BOX_HEAD.FC_DIM = 512 # 1024
+
+# Type of pooling operation applied to the incoming feature map for each RoI
+_C.MODEL.HOI_BOX_HEAD.POOLER_TYPE = "ROIAlignV2"
+_C.MODEL.HOI_BOX_HEAD.POOLER_RESOLUTION = 7
+_C.MODEL.HOI_BOX_HEAD.POOLER_SAMPLING_RATIO = 0
+
+# Default weights on positive interactions for interaction classification
+# These are empirically chosen to approximately lead to balanced
+# positive v.s. negative samples. 
+_C.MODEL.HOI_BOX_HEAD.ACTION_CLS_WEIGHTS = [1., 10.]
+
+# In some datasets, there are person to person interactions.
+# This option allows the model to handle this case.
+_C.MODEL.HOI_BOX_HEAD.ALLOW_PERSON_TO_PERSON = True
+
+# Channel of feature map: 2048 (slow) + 256 (fast) = 2304
+_C.MODEL.HOI_BOX_HEAD.IN_FEATURES = 2304
+
+# Number of channels of feature to be extracted from the backbone.
+# Should be >1 if FPN is used. 
+_C.MODEL.HOI_BOX_HEAD.IN_CHANNELS = 1
+
+# Minibatch size *per image* (number of human-object pairs)
+# Given th==e RoIs per training minibatch (`BOX_BATCH_SIZE_PER_IMAGE`), we split RoIs
+# into N `person`s and M` object`s (N + M = `BOX_BATCH_SIZE_PER_IMAGE`), and contruct
+# N * M person-object pairs. `HOI_BATCH_SIZE_PER_IMAGE` = The number of pairs per image.
+# Total number of pairs per training minibatch =
+#   ROI_HEADS.HOI_BATCH_SIZE_PER_IMAGE * SOLVER.IMS_PER_BATCH
+_C.MODEL.HOI_BOX_HEAD.HOI_BATCH_SIZE_PER_IMAGE = 128
+
+_C.MODEL.USE_TRAJECTORIES = False
 
 # -----------------------------------------------------------------------------
 # SlowFast options
@@ -216,6 +276,15 @@ _C.SLOWFAST.FUSION_CONV_CHANNEL_RATIO = 2
 # Kernel dimension used for fusing information from Fast pathway to Slow
 # pathway.
 _C.SLOWFAST.FUSION_KERNEL_SZ = 5
+
+
+# -----------------------------------------------------------------------------
+# Baseline options
+# -----------------------------------------------------------------------------
+_C.BASELINE = CfgNode()
+
+# Freeze the backbone network and only finetune subsequent modules
+_C.BASELINE.FREEZE_BACKBONE = True
 
 
 # -----------------------------------------------------------------------------
@@ -348,6 +417,9 @@ _C.NUM_SHARDS = 1
 # The index of the current machine.
 _C.SHARD_ID = 0
 
+# whether use multiple processes
+_C.MULTI_PROCESSES = False
+
 # Output basedir.
 _C.OUTPUT_DIR = "./tmp"
 
@@ -402,6 +474,9 @@ _C.DETECTION = CfgNode()
 # Whether enable video detection.
 _C.DETECTION.ENABLE = False
 
+# Whether enable video HOI detection.
+_C.DETECTION.ENABLE_HOI = False
+
 # Aligned version of RoI. More details can be found at slowfast/models/head_helper.py
 _C.DETECTION.ALIGNED = True
 
@@ -411,6 +486,90 @@ _C.DETECTION.SPATIAL_SCALE_FACTOR = 16
 # RoI tranformation resolution.
 _C.DETECTION.ROI_XFORM_RESOLUTION = 7
 
+
+# -----------------------------------------------------------------------------
+# VidOR Dataset options
+# -----------------------------------------------------------------------------
+
+_C.VIDOR = CfgNode()
+
+# Directory path of frames.
+_C.VIDOR.FRAME_DIR = "/home/aicsvidhoi1/SlowFast/slowfast/datasets/vidor/frames"
+
+# Directory path for files of frame lists.
+_C.VIDOR.FRAME_LIST_DIR = (
+    "/home/aicsvidhoi1/SlowFast/slowfast/datasets/vidor/frame_lists"
+)
+
+# Directory path for annotation files.
+_C.VIDOR.ANNOTATION_DIR = (
+    "/home/aicsvidhoi1/SlowFast/slowfast/datasets/vidor"
+)
+
+# Filenames of training samples list files.
+_C.VIDOR.TRAIN_LISTS = ["train.csv"]
+
+# Filenames of test samples list files.
+_C.VIDOR.TEST_LISTS = ["val.csv"]
+
+# Filenames of box list files for training. Note that we assume files which
+# contains predicted boxes will have a suffix "predicted_boxes" in the
+# filename.
+_C.VIDOR.TRAIN_GT_BOX_LISTS = ['train_frame_annots.json'] 
+_C.VIDOR.TRAIN_GT_TRAJECTORIES = 'train_trajectories.json'
+_C.VIDOR.TRAIN_PREDICT_BOX_LISTS = []
+
+# Filenames of box list files for test.
+_C.VIDOR.TEST_GT_BOX_LISTS = ['val_frame_annots.json']
+_C.VIDOR.TEST_GT_TRAJECTORIES = 'val_trajectories.json' 
+_C.VIDOR.TEST_PREDICT_BOX_LISTS = ['val_frame_annots.json'] # use GT for now
+
+# This option controls the score threshold for the predicted boxes to use.
+_C.VIDOR.DETECTION_SCORE_THRESH = 0.5
+
+# If use BGR as the format of input frames.
+_C.VIDOR.BGR = False
+
+# Training augmentation parameters
+# Whether to use color augmentation method.
+_C.VIDOR.TRAIN_USE_COLOR_AUGMENTATION = False
+
+# Whether to only use PCA jitter augmentation when using color augmentation
+# method (otherwise combine with color jitter method).
+_C.VIDOR.TRAIN_PCA_JITTER_ONLY = True
+
+# Eigenvalues for PCA jittering. Note PCA is RGB based.
+_C.VIDOR.TRAIN_PCA_EIGVAL = [0.225, 0.224, 0.229]
+
+# Eigenvectors for PCA jittering.
+_C.VIDOR.TRAIN_PCA_EIGVEC = [
+    [-0.5675, 0.7192, 0.4009],
+    [-0.5808, -0.0045, -0.8140],
+    [-0.5836, -0.6948, 0.4203],
+]
+
+# Whether to do horizontal flipping during test.
+_C.VIDOR.TEST_FORCE_FLIP = False
+
+# Whether to use full test set for validation split.
+_C.VIDOR.FULL_TEST_ON_VAL = False
+
+# The name of the file to the ava label map.
+_C.VIDOR.LABEL_MAP_FILE = 'pred_categories.json'
+
+# The name of the file to the ava exclusion.
+_C.VIDOR.EXCLUSION_FILE = ""
+
+# The name of the file to the ava groundtruth.
+_C.VIDOR.GROUNDTRUTH_FILE = 'val_frame_annots.json'
+
+# Backend to process image, includes `pytorch` and `cv2`.
+_C.VIDOR.IMG_PROC_BACKEND = "cv2"
+
+_C.VIDOR.TEST_DEBUG = False
+
+# Testing with gt bounding boxes
+_C.VIDOR.TEST_WITH_GT = False
 
 # -----------------------------------------------------------------------------
 # AVA Dataset options
@@ -492,6 +651,8 @@ _C.AVA.IMG_PROC_BACKEND = "cv2"
 # See https://arxiv.org/abs/1912.00998 for details about multigrid training.
 # ---------------------------------------------------------------------------- #
 _C.MULTIGRID = CfgNode()
+
+_C.MULTIGRID.ENABLE = False
 
 # Multigrid training allows us to train for more epochs with fewer iterations.
 # This hyperparameter specifies how many times more epochs to train.

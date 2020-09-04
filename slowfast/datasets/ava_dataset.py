@@ -63,7 +63,7 @@ class Ava(torch.utils.data.Dataset):
         boxes_and_labels = ava_helper.load_boxes_and_labels(
             cfg, mode=self._split
         )
-
+        # import pdb; pdb.set_trace()
         assert len(boxes_and_labels) == len(self._image_paths)
 
         boxes_and_labels = [
@@ -413,4 +413,5 @@ class Ava(torch.utils.data.Dataset):
             "metadata": metadata,
         }
 
+        import pdb; pdb.set_trace()
         return imgs, label_arrs, idx, extra_data

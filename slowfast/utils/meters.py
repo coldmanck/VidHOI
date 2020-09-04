@@ -12,6 +12,7 @@ from fvcore.common.timer import Timer
 from sklearn.metrics import average_precision_score
 
 import slowfast.datasets.ava_helper as ava_helper
+import slowfast.datasets.vidor_helper as vidor_helper
 import slowfast.utils.logging as logging
 import slowfast.utils.metrics as metrics
 import slowfast.utils.misc as misc
@@ -20,6 +21,12 @@ from slowfast.utils.ava_eval_helper import (
     read_csv,
     read_exclusions,
     read_labelmap,
+)
+from slowfast.utils.vidor_eval_helper import (
+    evaluate_vidor,
+    read_csv_vidor,
+    read_exclusions_vidor,
+    read_labelmap_vidor,
 )
 
 logger = logging.get_logger(__name__)
@@ -41,6 +48,215 @@ def get_ava_mini_groundtruth(full_groundtruth):
             if int(key.split(",")[1]) % 4 == 0:
                 ret[i][key] = full_groundtruth[i][key]
     return ret
+
+
+class VidorMeter(object):
+    """
+    Measure the AVA train, val, and test stats.
+    """
+
+    def __init__(self, overall_iters, cfg, mode):
+        """
+            overall_iters (int): the overall number of iterations of one epoch.
+            cfg (CfgNode): configs.
+            mode (str): `train`, `val`, or `test` mode.
+        """
+        self.cfg = cfg
+        self.lr = None
+        self.loss = ScalarMeter(cfg.LOG_PERIOD)
+        # self.full_ava_test = cfg.AVA.FULL_TEST_ON_VAL
+        self.mode = mode
+        self.iter_timer = Timer()
+
+        self.all_preds = []
+        self.all_all_action_labels = []
+        self.all_boxes = []
+        self.all_obj_classes = []
+        self.all_obj_classes_lengths = []
+        
+        self.overall_iters = overall_iters
+
+        self.reset()
+
+        # self.excluded_keys = read_exclusions(
+        #     os.path.join(cfg.VIDOR.ANNOTATION_DIR, cfg.VIDOR.EXCLUSION_FILE)
+        # )
+        # self.categories, self.class_whitelist = read_labelmap_vidor(
+        #     os.path.join(cfg.VIDOR.ANNOTATION_DIR, cfg.VIDOR.LABEL_MAP_FILE)
+        # )
+        # gt_filename = os.path.join(
+        #     cfg.VIDOR.ANNOTATION_DIR, cfg.VIDOR.GROUNDTRUTH_FILE
+        # )
+
+        # self.full_groundtruth = read_csv_vidor(gt_filename, self.class_whitelist)
+        # self.mini_groundtruth = get_ava_mini_groundtruth(self.full_groundtruth)
+
+        # _, self.video_idx_to_name = vidor_helper.load_image_lists(
+        #     cfg, mode == "train"
+        # )
+
+    def log_iter_stats(self, cur_epoch, cur_iter):
+        """
+        Log the stats.
+        Args:
+            cur_epoch (int): the current epoch.
+            cur_iter (int): the current iteration.
+        """
+
+        if (cur_iter + 1) % self.cfg.LOG_PERIOD != 0:
+            return
+
+        eta_sec = self.iter_timer.seconds() * (self.overall_iters - cur_iter)
+        eta = str(datetime.timedelta(seconds=int(eta_sec)))
+        if self.mode == "train":
+            stats = {
+                "_type": "{}_iter".format(self.mode),
+                "cur_epoch": "{}".format(cur_epoch + 1),
+                "cur_iter": "{}".format(cur_iter + 1),
+                "eta": eta,
+                "time_diff": self.iter_timer.seconds(),
+                "mode": self.mode,
+                "loss": self.loss.get_win_median(),
+                "lr": self.lr,
+            }
+        elif self.mode == "val":
+            stats = {
+                "_type": "{}_iter".format(self.mode),
+                "cur_epoch": "{}".format(cur_epoch + 1),
+                "cur_iter": "{}".format(cur_iter + 1),
+                "eta": eta,
+                "time_diff": self.iter_timer.seconds(),
+                "mode": self.mode,
+            }
+        elif self.mode == "test":
+            stats = {
+                "_type": "{}_iter".format(self.mode),
+                "cur_iter": "{}".format(cur_iter + 1),
+                "eta": eta,
+                "time_diff": self.iter_timer.seconds(),
+                "mode": self.mode,
+            }
+        else:
+            raise NotImplementedError("Unknown mode: {}".format(self.mode))
+
+        logging.log_json_stats(stats)
+
+    def iter_tic(self):
+        """
+        Start to record time.
+        """
+        self.iter_timer.reset()
+
+    def iter_toc(self):
+        """
+        Stop to record time.
+        """
+        self.iter_timer.pause()
+
+    def reset(self):
+        """
+        Reset the Meter.
+        """
+        self.loss.reset()
+
+        self.all_preds = []
+        self.all_preds_score = []
+        self.all_preds_bbox_pair_ids = []
+        self.all_proposal_scores = []
+        self.all_proposal_boxes = []
+        self.all_proposal_classes = []
+        self.all_gt_boxes = []
+        self.all_gt_action_labels = []
+        self.all_gt_obj_classes = []
+        self.all_gt_bbox_pair_ids = []
+
+    def update_stats(self, preds_score, preds, preds_bbox_pair_ids, proposal_scores, proposal_boxes, proposal_classes, gt_boxes, gt_action_labels, gt_obj_classes, gt_bbox_pair_ids, loss=None, lr=None):
+        """
+        Update the current stats.
+        Args:
+            preds (tensor): prediction embedding.
+            ori_boxes (tensor): original boxes (x1, y1, x2, y2).
+            metadata (tensor): metadata of the AVA data.
+            loss (float): loss value.
+            lr (float): learning rate.
+        """
+        if self.mode in ["val", "test"]:
+            self.all_preds_score.append(preds_score.detach().tolist())
+            self.all_preds.append(preds.detach().tolist())
+            self.all_preds_bbox_pair_ids.append(preds_bbox_pair_ids.detach().tolist())
+            self.all_proposal_scores.append(proposal_scores.detach().tolist())
+            self.all_proposal_boxes.append(proposal_boxes.detach().tolist())
+            self.all_proposal_classes.append(proposal_classes.detach().tolist())
+            self.all_gt_boxes.append(gt_boxes.detach().tolist())
+            self.all_gt_action_labels.append(gt_action_labels.detach().tolist())
+            self.all_gt_obj_classes.append(gt_obj_classes.detach().tolist())
+            self.all_gt_bbox_pair_ids.append(gt_bbox_pair_ids.detach().tolist())
+        if loss is not None:
+            self.loss.add_value(loss)
+        if lr is not None:
+            self.lr = lr
+
+    def finalize_metrics(self, log=True):
+        """
+        Calculate and log the final AVA metrics.
+        """
+        # all_preds_score = torch.cat(self.all_preds_score, dim=0)
+        # all_preds = torch.cat(self.all_preds, dim=0)
+        # all_preds_bbox_pair_ids = torch.cat(self.all_preds_bbox_pair_ids, dim=0)
+        # all_proposal_scores = torch.cat(self.all_proposal_scores, dim=0)
+        # all_proposal_boxes = torch.cat(self.all_preds_bbox_paall_proposal_boxesir_ids, dim=0)
+        # all_proposal_classes = torch.cat(self.all_proposal_classes, dim=0)
+        # all_gt_boxes = torch.cat(self.all_gt_boxes, dim=0)
+        # all_gt_action_labels = torch.cat(self.all_gt_action_labels, dim=0)
+        # all_gt_obj_classes = torch.cat(self.all_gt_obj_classes, dim=0)
+        # all_gt_bbox_pair_ids = torch.cat(self.all_gt_bbox_pair_ids, dim=0)
+
+        # groundtruth = self.full_groundtruth
+
+        self.map, self.m_rec, self.hd, self.dt, self.one_dr = evaluate_vidor(
+            self.all_preds,
+            self.all_preds_score,
+            self.all_preds_bbox_pair_ids,
+            self.all_proposal_scores,
+            self.all_proposal_boxes,
+            self.all_proposal_classes,
+            self.all_gt_boxes,
+            self.all_gt_action_labels,
+            self.all_gt_obj_classes,
+            self.all_gt_bbox_pair_ids,
+        )
+        if log:
+            stats = {
+                "mode": self.mode, 
+                "map": self.map,
+                'max_recall': self.m_rec,
+                'hd': self.hd,
+                'dt': self.dt,
+                'one_dr': self.one_dr,
+            }
+            logging.log_json_stats(stats)
+
+    def log_epoch_stats(self, cur_epoch):
+        """
+        Log the stats of the current epoch.
+        Args:
+            cur_epoch (int): the number of current epoch.
+        """
+        if self.mode in ["val", "test"]:
+            self.finalize_metrics(log=False)
+            stats = {
+                "_type": "{}_epoch".format(self.mode),
+                "cur_epoch": "{}".format(cur_epoch + 1),
+                "mode": self.mode,
+                "map": self.map,
+                'max_recall': self.m_rec,
+                'hd': self.hd,
+                'dt': self.dt,
+                'one_dr': self.one_dr,
+                "gpu_mem": "{:.2f} GB".format(misc.gpu_mem_usage()),
+                "RAM": "{:.2f}/{:.2f} GB".format(*misc.cpu_mem_usage()),
+            }
+            logging.log_json_stats(stats)
 
 
 class AVAMeter(object):

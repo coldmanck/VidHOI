@@ -104,7 +104,7 @@ def scale(size, image):
     return img.astype(np.float32)
 
 
-def scale_boxes(size, boxes, height, width):
+def scale_boxes(size, boxes, height, width, gt_boxes=None):
     """
     Scale the short side of the box to size.
     Args:
@@ -119,20 +119,24 @@ def scale_boxes(size, boxes, height, width):
     if (width <= height and width == size) or (
         height <= width and height == size
     ):
-        return boxes
+        return boxes if gt_boxes is None else boxes, gt_boxes
 
     new_width = size
     new_height = size
     if width < height:
         new_height = int(math.floor((float(height) / width) * size))
-        boxes *= float(new_height) / height
+        boxes = boxes * float(new_height) / height
+        if gt_boxes is not None:
+            gt_boxes = gt_boxes * float(new_height) / height
     else:
         new_width = int(math.floor((float(width) / height) * size))
-        boxes *= float(new_width) / width
-    return boxes
+        boxes = boxes * float(new_width) / width
+        if gt_boxes is not None:
+            gt_boxes = gt_boxes * float(new_width) / width
+    return boxes if gt_boxes is None else boxes, gt_boxes
 
 
-def horizontal_flip_list(prob, images, order="CHW", boxes=None):
+def horizontal_flip_list(prob, images, order="CHW", boxes=None, gt_boxes=None):
     """
     Horizontally flip the list of image and optional boxes.
     Args:
@@ -164,7 +168,7 @@ def horizontal_flip_list(prob, images, order="CHW", boxes=None):
     return images, boxes
 
 
-def spatial_shift_crop_list(size, images, spatial_shift_pos, boxes=None):
+def spatial_shift_crop_list(size, images, spatial_shift_pos, boxes=None, gt_boxes=None):
     """
     Perform left, center, or right crop of the given list of images.
     Args:
@@ -211,7 +215,12 @@ def spatial_shift_crop_list(size, images, spatial_shift_pos, boxes=None):
         for i in range(len(boxes)):
             boxes[i][:, [0, 2]] -= x_offset
             boxes[i][:, [1, 3]] -= y_offset
-    return cropped, boxes
+    if gt_boxes is not None:
+        for i in range(len(gt_boxes)):
+            gt_boxes[i][:, [0, 2]] -= x_offset
+            gt_boxes[i][:, [1, 3]] -= y_offset
+    print('gt_boxes is None:', gt_boxes is None)
+    return (cropped, boxes) if gt_boxes is None else (cropped, boxes, gt_boxes)
 
 
 def CHW2HWC(image):

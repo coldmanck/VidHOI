@@ -32,7 +32,7 @@ def detection_collate(batch):
     collated_extra_data = {}
     for key in extra_data[0].keys():
         data = [d[key] for d in extra_data]
-        if key == "boxes" or key == "ori_boxes":
+        if key in ["boxes", "ori_boxes"]:
             # Append idx info to the bboxes before concatenating them.
             bboxes = [
                 np.concatenate(
@@ -48,8 +48,77 @@ def detection_collate(batch):
             ).view(-1, 2)
         else:
             collated_extra_data[key] = default_collate(data)
-
+            
     return inputs, labels, video_idx, collated_extra_data
+
+
+def hoi_collate(batch):
+    """
+    Collate function for detection task. Concatanate bboxes, labels and
+    metadata from different samples in the first dimension instead of
+    stacking them to have a batch-size dimension.
+    Args:
+        batch (tuple or list): data batch to collate.
+    Returns:
+        (tuple): collated detection data batch.
+    """
+    inputs, extra_data = zip(*batch)
+    inputs = default_collate(inputs)
+
+    collated_extra_data = {}
+    for key in extra_data[0].keys():
+        data = [d[key] for d in extra_data]
+        if key in ["boxes", "ori_boxes", "obj_classes", "action_labels", "gt_boxes", "proposal_classes", "proposal_scores", "trajectories"]:
+            # Append idx info to the bboxes before concatenating them.
+            if key in ['obj_classes', 'proposal_classes', 'proposal_scores']: # use a mask
+                max_len = max([len(i) for i in data])
+                # mask = np.zeros((len(data), max_len))
+                obj_classes = []
+                lengths = []
+                for i in range(len(data)):
+                    length = data[i].shape[0]
+                    lengths.append(length)
+                    entry = np.full((length, 1), -1)
+                    entry[:] = float(i)
+                    # entry = [np.full((data[i].shape[0], 1), float(i)), data[i].reshape(-1, 1)]
+                    entry = np.concatenate((entry, data[i].reshape(-1, 1)), axis=1)
+                    obj_classes.append(entry)
+                    # mask[i][:length] = 1
+                obj_classes = np.concatenate(obj_classes, axis=0)
+                collated_extra_data[key] = torch.tensor(obj_classes).float()
+                if key.startswith('proposal_'):
+                    collated_extra_data['proposal_lengths'] = torch.tensor(lengths).int()
+                else:
+                    collated_extra_data[key + '_lengths'] = torch.tensor(lengths).int()
+            elif key == 'action_labels':
+                action_labels = []
+                for i in range(len(data)):
+                    n_bboxes = len(data[i])
+                    entry = np.full((n_bboxes ** 2, 2), -1)
+                    entry[:, 0] = float(i)
+                    for j in range(n_bboxes):
+                        entry[j * n_bboxes:(j+1) * n_bboxes, 1] = np.array(list(range(n_bboxes)))
+                    entry = np.concatenate((entry, data[i].reshape(-1, 50)), axis=1)
+                    action_labels.append(entry)
+                action_labels = np.concatenate(action_labels, axis=0)
+                collated_extra_data[key] = torch.tensor(action_labels).float()
+            else:
+                bboxes = [
+                    np.concatenate(
+                        [np.full((data[i].shape[0], 1), float(i)), data[i]], axis=1
+                    )
+                    for i in range(len(data))
+                ]
+                bboxes = np.concatenate(bboxes, axis=0)
+                collated_extra_data[key] = torch.tensor(bboxes).float()
+        elif key == "metadata":
+            collated_extra_data[key] = torch.tensor(
+                list(itertools.chain(*data))
+            ).view(-1, 2)
+        else:
+            collated_extra_data[key] = default_collate(data)
+            
+    return inputs, collated_extra_data
 
 
 def construct_loader(cfg, split, is_precise_bn=False):
@@ -69,12 +138,12 @@ def construct_loader(cfg, split, is_precise_bn=False):
         drop_last = True
     elif split in ["val"]:
         dataset_name = cfg.TRAIN.DATASET
-        batch_size = int(cfg.TRAIN.BATCH_SIZE / cfg.NUM_GPUS)
+        batch_size = int(cfg.TEST.BATCH_SIZE) if cfg.DETECTION.ENABLE_HOI else int(cfg.TRAIN.BATCH_SIZE / cfg.NUM_GPUS)
         shuffle = False
         drop_last = False
     elif split in ["test"]:
         dataset_name = cfg.TEST.DATASET
-        batch_size = int(cfg.TEST.BATCH_SIZE / cfg.NUM_GPUS)
+        batch_size = int(cfg.TEST.BATCH_SIZE)
         shuffle = False
         drop_last = False
 
@@ -97,6 +166,7 @@ def construct_loader(cfg, split, is_precise_bn=False):
             batch_sampler=batch_sampler,
             num_workers=cfg.DATA_LOADER.NUM_WORKERS,
             pin_memory=cfg.DATA_LOADER.PIN_MEMORY,
+            collate_fn=hoi_collate if cfg.DETECTION.ENABLE_HOI else (detection_collate if cfg.DETECTION.ENABLE else None),
         )
     else:
         # Create a sampler for multi-process training
@@ -110,7 +180,7 @@ def construct_loader(cfg, split, is_precise_bn=False):
             num_workers=cfg.DATA_LOADER.NUM_WORKERS,
             pin_memory=cfg.DATA_LOADER.PIN_MEMORY,
             drop_last=drop_last,
-            collate_fn=detection_collate if cfg.DETECTION.ENABLE else None,
+            collate_fn=hoi_collate if cfg.DETECTION.ENABLE_HOI else (detection_collate if cfg.DETECTION.ENABLE else None),
         )
     return loader
 

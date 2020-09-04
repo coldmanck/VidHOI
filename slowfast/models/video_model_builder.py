@@ -5,6 +5,7 @@
 
 import torch
 import torch.nn as nn
+import torchvision
 
 import slowfast.utils.weight_init_helper as init_helper
 from slowfast.models.batchnorm_helper import get_norm
@@ -68,6 +69,7 @@ _POOL1 = {
     "i3d_nopool": [[1, 1, 1]],
     "slow": [[1, 1, 1]],
     "slowfast": [[1, 1, 1], [1, 1, 1]],
+    "baseline": [[1, 1, 1]],
 }
 
 
@@ -132,6 +134,92 @@ class FuseFastToSlow(nn.Module):
 
 
 @MODEL_REGISTRY.register()
+class Baseline(nn.Module):
+    """
+    Model builder for baseline network (without SlowFast).
+    """
+
+    def __init__(self, cfg):
+        """
+        The `__init__` method of any subclass should also contain these
+            arguments.
+        Args:
+            cfg (CfgNode): model building configs, details are in the
+                comments of the config file.
+        """
+        super(Baseline, self).__init__()
+        self.norm_module = get_norm(cfg)
+        self.enable_detection = cfg.DETECTION.ENABLE
+        self.enable_detection_hoi = cfg.DETECTION.ENABLE_HOI
+        self.num_pathways = 1
+        self._construct_network(cfg)
+        init_helper.init_weights_baseline(
+            self, cfg.MODEL.FC_INIT_STD, cfg.RESNET.ZERO_INIT_FINAL_BN, cfg
+        )
+
+    def _construct_network(self, cfg):
+        """
+        Builds a Baseline model. The first pathway is the Slow pathway and the
+            second pathway is the Fast pathway.
+        Args:
+            cfg (CfgNode): model building configs, details are in the
+                comments of the config file.
+        """
+        assert cfg.MODEL.ARCH in _POOL1.keys()
+        pool_size = _POOL1[cfg.MODEL.ARCH]
+        assert len({len(pool_size), self.num_pathways}) == 1
+        assert cfg.RESNET.DEPTH in _MODEL_STAGE_DEPTH.keys()
+
+        (d2, d3, d4, d5) = _MODEL_STAGE_DEPTH[cfg.RESNET.DEPTH]
+
+        num_groups = cfg.RESNET.NUM_GROUPS
+        width_per_group = cfg.RESNET.WIDTH_PER_GROUP
+        dim_inner = num_groups * width_per_group
+        out_dim_ratio = (
+            cfg.SLOWFAST.BETA_INV // cfg.SLOWFAST.FUSION_CONV_CHANNEL_RATIO
+        )
+
+        # initielize backbone resnet model
+        resnet50 = torchvision.models.resnet50(pretrained=(False if cfg.RESNET.SCRATCH else True))
+        self.backbone = torch.nn.Sequential(*list(resnet50.children())[:-2])
+        if not cfg.RESNET.SCRATCH and cfg.BASELINE.FREEZE_BACKBONE:
+            for param in self.backbone.parameters():
+                param.requires_grad = False
+
+        # if cfg.DETECTION.ENABLE:
+        #     if cfg.DETECTION.ENABLE_HOI:
+        self.head = head_helper.ResNetPoolHead(
+            dim_in=[width_per_group * 32],
+            num_classes=cfg.MODEL.NUM_CLASSES,
+            pool_size=[[cfg.DATA.NUM_FRAMES // pool_size[0][0], 1, 1,]],
+            is_baseline=True
+        )
+        self.hoi_head = head_helper.HOIHead(cfg, 
+            resolution=[cfg.DETECTION.ROI_XFORM_RESOLUTION] * 2, scale_factor=cfg.DETECTION.SPATIAL_SCALE_FACTOR, aligned=cfg.DETECTION.ALIGNED,)
+     
+    def forward(self, x, bboxes=None, obj_classes=None, obj_classes_lengths=None, action_labels=None, gt_obj_classes=None, gt_obj_classes_lengths=None):
+        # x is a list of single path way features. E.g.,
+        # (Pdb) x[0].shape
+        # torch.Size([batch_size, 3, 1, 224, 224])
+        x = x[0].squeeze(2)
+        x = [self.backbone(x)]
+        # (Pdb) x.shape
+        # torch.Size([16, 2048, 7, 7])
+        if self.enable_detection:
+            if self.enable_detection_hoi:
+                x = self.head(x)
+                # (Pdb) x.shape
+                # torch.Size([batch_size, 80])
+                # bboxes = torch.Size([65, 5])
+                x = self.hoi_head(x, bboxes, obj_classes, obj_classes_lengths, action_labels, gt_obj_classes, gt_obj_classes_lengths)
+            else:
+                x = self.head(x, bboxes)
+        else:
+            x = self.head(x)
+        return x
+
+
+@MODEL_REGISTRY.register()
 class SlowFast(nn.Module):
     """
     SlowFast model builder for SlowFast network.
@@ -152,10 +240,11 @@ class SlowFast(nn.Module):
         super(SlowFast, self).__init__()
         self.norm_module = get_norm(cfg)
         self.enable_detection = cfg.DETECTION.ENABLE
+        self.enable_detection_hoi = cfg.DETECTION.ENABLE_HOI
         self.num_pathways = 2
         self._construct_network(cfg)
         init_helper.init_weights(
-            self, cfg.MODEL.FC_INIT_STD, cfg.RESNET.ZERO_INIT_FINAL_BN
+            self, cfg.MODEL.FC_INIT_STD, cfg.RESNET.ZERO_INIT_FINAL_BN, cfg
         )
 
     def _construct_network(self, cfg):
@@ -327,28 +416,51 @@ class SlowFast(nn.Module):
         )
 
         if cfg.DETECTION.ENABLE:
-            self.head = head_helper.ResNetRoIHead(
-                dim_in=[
-                    width_per_group * 32,
-                    width_per_group * 32 // cfg.SLOWFAST.BETA_INV,
-                ],
-                num_classes=cfg.MODEL.NUM_CLASSES,
-                pool_size=[
-                    [
-                        cfg.DATA.NUM_FRAMES
-                        // cfg.SLOWFAST.ALPHA
-                        // pool_size[0][0],
-                        1,
-                        1,
+            if cfg.DETECTION.ENABLE_HOI:
+                self.head = head_helper.ResNetPoolHead(
+                    dim_in=[
+                        width_per_group * 32,
+                        width_per_group * 32 // cfg.SLOWFAST.BETA_INV,
                     ],
-                    [cfg.DATA.NUM_FRAMES // pool_size[1][0], 1, 1],
-                ],
-                resolution=[[cfg.DETECTION.ROI_XFORM_RESOLUTION] * 2] * 2,
-                scale_factor=[cfg.DETECTION.SPATIAL_SCALE_FACTOR] * 2,
-                dropout_rate=cfg.MODEL.DROPOUT_RATE,
-                act_func=cfg.MODEL.HEAD_ACT,
-                aligned=cfg.DETECTION.ALIGNED,
-            )
+                    num_classes=cfg.MODEL.NUM_CLASSES,
+                    pool_size=[None, None]
+                    if cfg.MULTIGRID.SHORT_CYCLE else 
+                    [
+                        [
+                            cfg.DATA.NUM_FRAMES
+                            // cfg.SLOWFAST.ALPHA
+                            // pool_size[0][0],
+                            1,
+                            1,
+                        ],
+                        [cfg.DATA.NUM_FRAMES // pool_size[1][0], 1, 1],
+                    ],
+                )
+                self.hoi_head = head_helper.HOIHead(cfg, 
+                    resolution=[cfg.DETECTION.ROI_XFORM_RESOLUTION] * 2, scale_factor=cfg.DETECTION.SPATIAL_SCALE_FACTOR, aligned=cfg.DETECTION.ALIGNED)
+            else:
+                self.head = head_helper.ResNetRoIHead(
+                    dim_in=[
+                        width_per_group * 32,
+                        width_per_group * 32 // cfg.SLOWFAST.BETA_INV,
+                    ],
+                    num_classes=cfg.MODEL.NUM_CLASSES,
+                    pool_size=[
+                        [
+                            cfg.DATA.NUM_FRAMES
+                            // cfg.SLOWFAST.ALPHA
+                            // pool_size[0][0],
+                            1,
+                            1,
+                        ],
+                        [cfg.DATA.NUM_FRAMES // pool_size[1][0], 1, 1],
+                    ],
+                    resolution=[[cfg.DETECTION.ROI_XFORM_RESOLUTION] * 2] * 2,
+                    scale_factor=[cfg.DETECTION.SPATIAL_SCALE_FACTOR] * 2,
+                    dropout_rate=cfg.MODEL.DROPOUT_RATE,
+                    act_func=cfg.MODEL.HEAD_ACT,
+                    aligned=cfg.DETECTION.ALIGNED,
+                )
         else:
             self.head = head_helper.ResNetBasicHead(
                 dim_in=[
@@ -376,7 +488,12 @@ class SlowFast(nn.Module):
                 act_func=cfg.MODEL.HEAD_ACT,
             )
 
-    def forward(self, x, bboxes=None):
+    def forward(self, x, bboxes=None, obj_classes=None, obj_classes_lengths=None, action_labels=None, gt_obj_classes=None, gt_obj_classes_lengths=None, trajectories=None):
+        # x is a list of two path way features. E.g.,
+        # (Pdb) x[0].shape
+        # torch.Size([batch_size, 3, 8, 224, 224])
+        # (Pdb) x[1].shape
+        # torch.Size([batch_size, 3, 32, 224, 224])
         x = self.s1(x)
         x = self.s1_fuse(x)
         x = self.s2(x)
@@ -389,8 +506,19 @@ class SlowFast(nn.Module):
         x = self.s4(x)
         x = self.s4_fuse(x)
         x = self.s5(x)
+        # (Pdb) x[0].shape
+        # torch.Size([batch_size, 2048, 8, 14, 14])
+        # (Pdb) x[1].shape
+        # torch.Size([batch_size, 256, 32, 14, 14])
         if self.enable_detection:
-            x = self.head(x, bboxes)
+            if self.enable_detection_hoi:
+                x = self.head(x)
+                # (Pdb) x.shape
+                # torch.Size([batch_size, 80])
+                # bboxes = torch.Size([65, 5])
+                x = self.hoi_head(x, bboxes, obj_classes, obj_classes_lengths, action_labels, gt_obj_classes, gt_obj_classes_lengths, trajectories)
+            else:
+                x = self.head(x, bboxes)
         else:
             x = self.head(x)
         return x
@@ -423,6 +551,7 @@ class ResNet(nn.Module):
         super(ResNet, self).__init__()
         self.norm_module = get_norm(cfg)
         self.enable_detection = cfg.DETECTION.ENABLE
+        self.enable_detection_hoi = cfg.DETECTION.ENABLE_HOI
         self.num_pathways = 1
         self._construct_network(cfg)
         init_helper.init_weights(
@@ -551,7 +680,9 @@ class ResNet(nn.Module):
             self.head = head_helper.ResNetRoIHead(
                 dim_in=[width_per_group * 32],
                 num_classes=cfg.MODEL.NUM_CLASSES,
-                pool_size=[[cfg.DATA.NUM_FRAMES // pool_size[0][0], 1, 1]],
+                pool_size=[None, None]
+                    if cfg.MULTIGRID.SHORT_CYCLE else 
+                    [[cfg.DATA.NUM_FRAMES // pool_size[0][0], 1, 1]],
                 resolution=[[cfg.DETECTION.ROI_XFORM_RESOLUTION] * 2],
                 scale_factor=[cfg.DETECTION.SPATIAL_SCALE_FACTOR],
                 dropout_rate=cfg.MODEL.DROPOUT_RATE,

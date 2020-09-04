@@ -66,6 +66,16 @@ def train_epoch(
 
         if cfg.DETECTION.ENABLE:
             # Compute the predictions.
+            import pdb; pdb.set_trace()
+            # len(inputs) = 2
+            # (Pdb) inputs[0].shape
+            # torch.Size([16, 3, 8, 224, 224])
+            # (Pdb) inputs[1].shape
+            # torch.Size([16, 3, 32, 224, 224])
+            # (Pdb) labels.shape
+            # torch.Size([65, 80])
+            # (Pdb) meta['boxes'].shape
+            # torch.Size([65, 5])
             preds = model(inputs, meta["boxes"])
 
         else:

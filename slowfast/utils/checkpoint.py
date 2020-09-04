@@ -398,6 +398,7 @@ def load_test_checkpoint(cfg, model):
         # If no checkpoint found in MODEL_VIS.CHECKPOINT_FILE_PATH or in the current
         # checkpoint folder, try to load checkpoint from
         # TEST.CHECKPOINT_FILE_PATH and test it.
+        logger.info(f'Loading checkingpoint from {cfg.TEST.CHECKPOINT_FILE_PATH}')
         load_checkpoint(
             cfg.TEST.CHECKPOINT_FILE_PATH,
             model,
@@ -450,6 +451,7 @@ def load_train_checkpoint(cfg, model, optimizer):
         )
         start_epoch = checkpoint_epoch + 1
     else:
+        logger.info("Training from scratch.")
         start_epoch = 0
 
     return start_epoch

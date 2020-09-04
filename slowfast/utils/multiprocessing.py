@@ -35,6 +35,11 @@ def run(
     # Initialize the process group.
     world_size = num_proc * num_shards
     rank = shard_id * num_proc + local_rank
+    
+    # if cfg.MULTI_PROCESSES:
+    #     import os
+    #     os.environ['MASTER_ADDR'] = '127.0.0.2'
+    #     os.environ['MASTER_PORT'] = '12345'
 
     try:
         torch.distributed.init_process_group(
