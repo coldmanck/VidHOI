@@ -18,8 +18,8 @@ build/*
 slowfast.egg-info/*
 
 .ipynb_checkpoints
-# .ipynb_checkpoints
 .vs_code
+# .ipynb_checkpoints
 
 __pycache__
 _ext
