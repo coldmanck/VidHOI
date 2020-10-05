@@ -56,7 +56,20 @@ def perform_test(test_loader, model, cfg, writer=None):
 
     count = 0
     use_proposal = False
+    if cfg.DEMO.ENABLE:
+        assert cfg.DEMO.VIDEO_IDX != ''
+        found = False    
     for inputs, meta in tqdm(test_loader):
+        if cfg.DEMO.ENABLE:
+            # import pdb; pdb.set_trace()
+            if meta['orig_video_idx'][0] != cfg.DEMO.VIDEO_IDX:
+                print(meta['orig_video_idx'][0])
+                if found:
+                    break
+                continue
+            found = True
+            meta.pop('orig_video_idx')
+
         # Transfer the data to the current GPU device.
         if isinstance(inputs, (list,)):
             for i in range(len(inputs)):
@@ -77,10 +90,15 @@ def perform_test(test_loader, model, cfg, writer=None):
         if 'proposal_classes' in meta:
             use_proposal = True
         # preds, action_labels, bbox_pair_ids = model(inputs, meta["boxes"], meta['obj_classes'], meta['obj_classes_lengths'], meta['action_labels'])
+        
+        trajectories = human_poses = trajectory_boxes = None
         if cfg.MODEL.USE_TRAJECTORIES:
-            preds, action_labels, bbox_pair_ids, gt_bbox_pair_ids = model(inputs, meta["boxes"], meta['proposal_classes'], meta['proposal_lengths'], meta['action_labels'], meta['obj_classes'], meta['obj_classes_lengths'], trajectories=meta['trajectories'])
-        else:
-            preds, action_labels, bbox_pair_ids, gt_bbox_pair_ids = model(inputs, meta["boxes"], meta['proposal_classes'], meta['proposal_lengths'], meta['action_labels'], meta['obj_classes'], meta['obj_classes_lengths'])
+            trajectories = meta['trajectories']
+        if cfg.MODEL.USE_HUMAN_POSES:
+            human_poses = meta['human_poses']
+        if cfg.DETECTION.ENABLE_TOI_POOLING or cfg.MODEL.USE_TRAJECTORY_CONV:
+            trajectory_boxes = meta['trajectory_boxes']
+        preds, action_labels, bbox_pair_ids, gt_bbox_pair_ids = model(inputs, meta["boxes"], meta['proposal_classes'], meta['proposal_lengths'], meta['action_labels'], meta['obj_classes'], meta['obj_classes_lengths'], trajectories=trajectories, human_poses=human_poses, trajectory_boxes=trajectory_boxes)
 
         preds_score = F.sigmoid(preds).cpu()
         preds = preds_score >= 0.5 # Convert scores into 'True' or 'False'
@@ -147,6 +165,8 @@ def perform_test(test_loader, model, cfg, writer=None):
         save_file_name += '_debug'
     if use_proposal:
         save_file_name += '_proposal'
+    if cfg.DEMO.ENABLE:
+        save_file_name += '_demo_' + '_'.join(cfg.DEMO.VIDEO_IDX.split('/')) + '_'
     save_file_name += '.json'
 
     print(f'Saving to {save_file_name}')
@@ -186,7 +206,12 @@ def test(cfg):
     cu.load_test_checkpoint(cfg, model)
 
     # Create video testing loaders.
-    test_loader = loader.construct_loader(cfg, "test")
+    
+    if cfg.DEMO.ENABLE and cfg.DEMO.SPLIT == 'train':
+        test_loader = loader.construct_loader(cfg, "train")
+    else:
+        test_loader = loader.construct_loader(cfg, "test")
+
     logger.info("Testing model for {} iterations".format(len(test_loader)))
 
     # assert cfg.NUM_GPUS == cfg.TEST.BATCH_SIZE

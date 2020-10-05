@@ -197,7 +197,7 @@ class Baseline(nn.Module):
         self.hoi_head = head_helper.HOIHead(cfg, 
             resolution=[cfg.DETECTION.ROI_XFORM_RESOLUTION] * 2, scale_factor=cfg.DETECTION.SPATIAL_SCALE_FACTOR, aligned=cfg.DETECTION.ALIGNED,)
      
-    def forward(self, x, bboxes=None, obj_classes=None, obj_classes_lengths=None, action_labels=None, gt_obj_classes=None, gt_obj_classes_lengths=None):
+    def forward(self, x, bboxes=None, obj_classes=None, obj_classes_lengths=None, action_labels=None, gt_obj_classes=None, gt_obj_classes_lengths=None, trajectories=None, human_poses=None, trajectory_boxes=None):
         # x is a list of single path way features. E.g.,
         # (Pdb) x[0].shape
         # torch.Size([batch_size, 3, 1, 224, 224])
@@ -241,6 +241,7 @@ class SlowFast(nn.Module):
         self.norm_module = get_norm(cfg)
         self.enable_detection = cfg.DETECTION.ENABLE
         self.enable_detection_hoi = cfg.DETECTION.ENABLE_HOI
+        self.enable_toi_pooling = cfg.DETECTION.ENABLE_TOI_POOLING
         self.num_pathways = 2
         self._construct_network(cfg)
         init_helper.init_weights(
@@ -417,6 +418,31 @@ class SlowFast(nn.Module):
 
         if cfg.DETECTION.ENABLE:
             if cfg.DETECTION.ENABLE_HOI:
+                if cfg.DETECTION.ENABLE_TOI_POOLING:
+                    self.toi_head = head_helper.ResNetToIHead(
+                        dim_in=[
+                            width_per_group * 32,
+                            width_per_group * 32 // cfg.SLOWFAST.BETA_INV,
+                        ],
+                        num_classes=cfg.MODEL.NUM_CLASSES,
+                        pool_size=[None, None]
+                        if cfg.MULTIGRID.SHORT_CYCLE else 
+                        [
+                            [
+                                cfg.DATA.NUM_FRAMES
+                                // cfg.SLOWFAST.ALPHA
+                                // pool_size[0][0],
+                                1,
+                                1,
+                            ],
+                            [cfg.DATA.NUM_FRAMES // pool_size[1][0], 1, 1],
+                        ],
+                        resolution=[[cfg.DETECTION.ROI_XFORM_RESOLUTION] * 2] * 2,
+                        scale_factor=[cfg.DETECTION.SPATIAL_SCALE_FACTOR] * 2,
+                        num_frames=cfg.DATA.NUM_FRAMES,
+                        alpha=cfg.SLOWFAST.ALPHA,
+                        aligned=cfg.DETECTION.ALIGNED,
+                    )
                 self.head = head_helper.ResNetPoolHead(
                     dim_in=[
                         width_per_group * 32,
@@ -488,7 +514,7 @@ class SlowFast(nn.Module):
                 act_func=cfg.MODEL.HEAD_ACT,
             )
 
-    def forward(self, x, bboxes=None, obj_classes=None, obj_classes_lengths=None, action_labels=None, gt_obj_classes=None, gt_obj_classes_lengths=None, trajectories=None):
+    def forward(self, x, bboxes=None, obj_classes=None, obj_classes_lengths=None, action_labels=None, gt_obj_classes=None, gt_obj_classes_lengths=None, trajectories=None, human_poses=None, trajectory_boxes=None):
         # x is a list of two path way features. E.g.,
         # (Pdb) x[0].shape
         # torch.Size([batch_size, 3, 8, 224, 224])
@@ -512,11 +538,9 @@ class SlowFast(nn.Module):
         # torch.Size([batch_size, 256, 32, 14, 14])
         if self.enable_detection:
             if self.enable_detection_hoi:
+                toi_pooled_features = self.toi_head(x, bboxes, trajectory_boxes) if self.enable_toi_pooling else None # need to go before x = self.head(x)
                 x = self.head(x)
-                # (Pdb) x.shape
-                # torch.Size([batch_size, 80])
-                # bboxes = torch.Size([65, 5])
-                x = self.hoi_head(x, bboxes, obj_classes, obj_classes_lengths, action_labels, gt_obj_classes, gt_obj_classes_lengths, trajectories)
+                x = self.hoi_head(x, bboxes, obj_classes, obj_classes_lengths, action_labels, gt_obj_classes, gt_obj_classes_lengths, trajectories, human_poses, toi_pooled_features, trajectory_boxes)
             else:
                 x = self.head(x, bboxes)
         else:
@@ -551,7 +575,7 @@ class ResNet(nn.Module):
         super(ResNet, self).__init__()
         self.norm_module = get_norm(cfg)
         self.enable_detection = cfg.DETECTION.ENABLE
-        self.enable_detection_hoi = cfg.DETECTION.ENABLE_HOI
+        # self.enable_detection_hoi = cfg.DETECTION.ENABLE_HOI
         self.num_pathways = 1
         self._construct_network(cfg)
         init_helper.init_weights(

@@ -50,7 +50,13 @@ class Vidor(torch.utils.data.Dataset):
         self.is_baseline = True if cfg.MODEL.ARCH == 'baseline' else False
         self.multigrid_enabled = cfg.MULTIGRID.ENABLE
         
-        self.trajectories_path = cfg.VIDOR.TRAIN_GT_TRAJECTORIES if split == 'train' else cfg.VIDOR.TEST_GT_TRAJECTORIES
+        if self.cfg.MODEL.USE_TRAJECTORIES or self.cfg.MODEL.USE_SPA_CONF:
+            self.trajectories_path = cfg.VIDOR.TRAIN_GT_TRAJECTORIES if split == 'train' else cfg.VIDOR.TEST_GT_TRAJECTORIES
+
+        if self.cfg.MODEL.USE_SPA_CONF:
+            self.human_poses_path = cfg.VIDOR.TRAIN_GT_SPA_CONF if split == 'train' else cfg.VIDOR.TEST_GT_SPA_CONF
+        elif self.cfg.MODEL.USE_HUMAN_POSES:
+            self.human_poses_path = cfg.VIDOR.TRAIN_GT_HUMAN_POSES if split == 'train' else cfg.VIDOR.TEST_GT_HUMAN_POSES
 
         self._load_data(cfg)
 
@@ -62,8 +68,19 @@ class Vidor(torch.utils.data.Dataset):
             cfg (CfgNode): config
         """
         # Load frame trajectories
-        with open(os.path.join(cfg.VIDOR.ANNOTATION_DIR, self.trajectories_path), 'r') as f:
-            self._trajectories = json.load(f)
+        if self.cfg.MODEL.USE_TRAJECTORIES or self.cfg.MODEL.USE_SPA_CONF:
+            if cfg.VIDOR.TEST_DEBUG:
+                print('Loading trajectories...')
+            with open(os.path.join(cfg.VIDOR.ANNOTATION_DIR, self.trajectories_path), 'r') as f:
+                self._trajectories = json.load(f)
+
+        # Load human pose features (theta; 72 points)
+        if self.cfg.MODEL.USE_HUMAN_POSES or self.cfg.MODEL.USE_SPA_CONF:
+            if cfg.VIDOR.TEST_DEBUG:
+                print('Loading human poses...')
+            import pickle
+            with open(os.path.join(cfg.VIDOR.ANNOTATION_DIR, self.human_poses_path), 'rb') as f:
+                self._human_poses = pickle.load(f)
 
         # Loading frame paths.
         (
@@ -208,7 +225,7 @@ class Vidor(torch.utils.data.Dataset):
         ]
 
         # Do color augmentation (after divided by 255.0).
-        if self._split == "train" and self._use_color_augmentation:
+        if self._split == "train" and self._use_color_augmentation: # False
             if not self._pca_jitter_only:
                 imgs = cv2_transform.color_jitter_list(
                     imgs,
@@ -471,6 +488,49 @@ class Vidor(torch.utils.data.Dataset):
         )
 
         orig_img_width, orig_img_height = imgs[0].shape[1], imgs[0].shape[0]
+        n_boxes = boxes.shape[0]
+
+        if self.cfg.DETECTION.ENABLE_TOI_POOLING or self.cfg.MODEL.USE_TRAJECTORY_CONV:
+            assert self.cfg.MODEL.USE_TRAJECTORIES
+            all_trajectories = [self._trajectories[orig_video_idx][frame] for frame in seq]
+            boxes_ids = [gt_idxs_to_ids[i] for i in range(len(boxes))]
+            trajectories = []
+            for j, frame in enumerate(seq):
+                trajectory = []
+                all_trajectory = all_trajectories[j]
+                for i in boxes_ids:
+                    found = False
+                    for traj in all_trajectory:
+                        if traj['tid'] == i:
+                            trajectory.append(list(traj['bbox'].values()))
+                            found = True
+                            break
+                    if not found:
+                        trajectory.append([0, 0, imgs[0].shape[1], imgs[0].shape[0]]) # if that object doesn't exist then use whole-img bbox
+                trajectories.append(trajectory)
+            # (Pdb) np.array(trajectories).shape
+            # (32, 2, 4) -> 2 means n_obj
+            # if self.cfg.VIDOR.TEST_DEBUG:
+            #     import pdb; pdb.set_trace()
+            trajectories = np.array(trajectories, dtype=np.float64)
+            # trajectories = np.transpose(trajectories, [1, 0, 2])
+            trajectories = trajectories.reshape(-1, 4)
+            # import pdb; pdb.set_trace()
+            boxes = np.concatenate((boxes, trajectories))
+
+        if self.cfg.MODEL.USE_SPA_CONF:
+            import pdb; pdb.set_trace()
+            if self.cfg.VIDOR.TEST_DEBUG:
+                orig_video_idx = '0085/7002697331'
+            human_poses = self._human_poses[orig_video_idx]
+            boxes_ids = [gt_idxs_to_ids[i] for i in range(len(boxes))]
+            human_poses = np.concatenate(([[human_poses[boxes_ids[jdx]]] for jdx, obj_class in enumerate(obj_classes) if obj_class == 0]))
+            human_poses = human_poses[:, seq]
+            # human_poses = shape (n_person, 32, 17, 2)
+            
+            box_maps = np.zeros((n_boxes, orig_img_height, orig_img_width))
+            n_person = human_poses.shape[0]
+            pose_maps = np.zeros((n_person, orig_img_height, orig_img_width))
 
         if self.cfg.VIDOR.IMG_PROC_BACKEND == "pytorch": # False
             # T H W C -> T C H W.
@@ -498,14 +558,13 @@ class Vidor(torch.utils.data.Dataset):
                     imgs, boxes=boxes, gt_boxes=gt_boxes
                 )
 
-        if self.cfg.MODEL.USE_TRAJECTORIES:
-            try:
-                all_trajectories = [self._trajectories[orig_video_idx][frame] for frame in seq]
-            except:
-                print(len(self._trajectories))
-                print(seq)
-                print(idx)
-                import pdb; pdb.set_trace()
+        if self.cfg.DETECTION.ENABLE_TOI_POOLING or self.cfg.MODEL.USE_TRAJECTORY_CONV:
+            # import pdb; pdb.set_trace()
+            trajectory_boxes = boxes[n_boxes:].reshape(n_boxes, -1)
+            boxes = boxes[:n_boxes]
+        
+        if self.cfg.MODEL.USE_TRAJECTORIES or self.cfg.MODEL.USE_SPA_CONF:
+            all_trajectories = [self._trajectories[orig_video_idx][frame] for frame in seq]
             boxes_ids = [gt_idxs_to_ids[i] for i in range(len(boxes))]
             trajectories = []
             for j, frame in enumerate(seq):
@@ -522,7 +581,9 @@ class Vidor(torch.utils.data.Dataset):
                         trajectory.append([0, 0, imgs[0].shape[1], imgs[0].shape[0]]) # if that object doesn't exist then use whole-img bbox
                 trajectories.append(trajectory)
             # (Pdb) np.array(trajectories).shape
-            # (32, 3, 4)
+            # (32, 2, 4)
+            # if self.cfg.VIDOR.TEST_DEBUG:
+            #     import pdb; pdb.set_trace()
             trajectories = np.array(trajectories, dtype=np.float64)
             trajectories = np.transpose(trajectories, [1, 0, 2])
 
@@ -531,9 +592,10 @@ class Vidor(torch.utils.data.Dataset):
             trajectories[:, :, 1] *= height_ratio
             trajectories[:, :, 2] *= width_ratio
             trajectories[:, :, 3] *= height_ratio
-
+            
             trajectories = trajectories.reshape(boxes.shape[0], -1)
-
+            # trajectories.shape = (n_trajectories, 32*4)
+        
         imgs = utils.pack_pathway_output(self.cfg, imgs)
         metadata = [[video_idx, sec]] * len(boxes)
 
@@ -548,10 +610,24 @@ class Vidor(torch.utils.data.Dataset):
         if self.cfg.MODEL.USE_TRAJECTORIES:
             extra_data["trajectories"] = trajectories
 
+        if self.cfg.DETECTION.ENABLE_TOI_POOLING or self.cfg.MODEL.USE_TRAJECTORY_CONV:
+            extra_data["trajectory_boxes"] = trajectory_boxes
+            
+        if self.cfg.MODEL.USE_HUMAN_POSES:
+            human_poses = self._human_poses[orig_video_idx]
+            human_poses = np.concatenate(([[human_poses[boxes_ids[jdx]]] for jdx, obj_class in enumerate(obj_classes) if obj_class == 0]))
+            human_poses = human_poses[:, seq, :]
+
+            human_poses = human_poses.reshape(human_poses.shape[0], -1)
+            extra_data["human_poses"] = human_poses
+        
         if gt_boxes is not None:
             extra_data['gt_boxes'] = gt_boxes
             extra_data['proposal_classes'] = proposal_classes
             extra_data['proposal_scores'] = proposal_scores
+
+        if self.cfg.DEMO.ENABLE:
+            extra_data['orig_video_idx'] = orig_video_idx
 
         # print('imgs[0].shape:', imgs[0].shape, 'extra_data["boxes"][0].shape:', extra_data['boxes'][0].shape)
 

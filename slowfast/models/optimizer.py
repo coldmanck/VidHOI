@@ -40,6 +40,18 @@ def construct_optimizer(model, cfg):
         {"params": bn_params, "weight_decay": cfg.BN.WEIGHT_DECAY},
         {"params": non_bn_parameters, "weight_decay": cfg.SOLVER.WEIGHT_DECAY},
     ]
+    
+    # if cfg.VIDOR.TEST_DEBUG:
+        # (Pdb) sum(p.numel() for p in model.parameters() if p.requires_grad)
+        # 95343610 # trajectory w/ fcs + human poses w/ fcs
+        # 93638650 # trajectory w/ fcs
+        # 92654074 # trajectory
+        
+        # import pdb; pdb.set_trace()
+        
+        # from pytorch_model_summary import summary
+        # summary(model, *inputs, batch_size=-1, show_input=False, show_hierarchical=False, print_summary=False, max_depth=1, show_parent_layers=False):
+
     # Check all parameters will be passed into optimizer.
     assert len(list(model.parameters())) == len(non_bn_parameters) + len(
         bn_params

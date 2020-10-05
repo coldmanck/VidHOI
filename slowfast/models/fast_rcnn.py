@@ -665,7 +665,12 @@ class HoiOutputLayers(nn.Module):
         test_score_thresh=0.0,
         test_topk_per_image=100,
         use_trajectories=False,
-        trajectory_frames=32
+        num_frames=32,
+        use_relativity_feat=False,
+        use_fcs=False,
+        use_fc_proj_dim=False,
+        proj_dim=256,
+        n_additional_feats=0,
     ):
         """
         Args:
@@ -680,7 +685,19 @@ class HoiOutputLayers(nn.Module):
         input_size = input_shape.channels * (input_shape.width or 1) * (input_shape.height or 1)
         # The prediction layer for num_classes foreground classes. The input should be
         # features from person, object and union region. Thus, the input size * 3.
-        self.cls_fc1 = Linear(input_size * 3 + trajectory_frames if use_trajectories else input_size * 3, input_size)
+        # self.cls_fc1 = Linear(input_size * 3 + trajectory_frames if use_trajectories else input_size * 3, input_size)
+        if use_fc_proj_dim:
+            self.cls_fc1 = Linear(input_size * 3 + proj_dim * n_additional_feats, input_size)
+        elif use_trajectories and not use_fcs:
+            if use_relativity_feat: 
+                # C (32*2), S (32*2), M (31*2)
+                trajectory_frames = num_frames * 2 * 2 + (num_frames - 1) * 2
+            else:
+                # *4 for four coordinates, *2 for s & o respectively
+                trajectory_frames = num_frames * 4 * 2
+            self.cls_fc1 = Linear(input_size * 3 + trajectory_frames, input_size)
+        else:
+            self.cls_fc1 = Linear(input_size * 3, input_size)
         self.cls_score = Linear(input_size, num_classes)
 
         for layer in [self.cls_fc1, self.cls_score]:
@@ -692,7 +709,7 @@ class HoiOutputLayers(nn.Module):
         self.pos_weights = pos_weights
 
     @classmethod
-    def from_config(cls, cfg, input_shape):
+    def from_config(cls, cfg, input_shape, n_additional_feats=0):
         # fmt: on
         num_classes          = cfg.MODEL.HOI_BOX_HEAD.NUM_ACTIONS
         test_score_thresh    = cfg.MODEL.HOI_BOX_HEAD.HOI_SCORE_THRESH_TEST
@@ -732,7 +749,12 @@ class HoiOutputLayers(nn.Module):
             "test_score_thresh": test_score_thresh,
             "test_topk_per_image": test_topk_per_image,
             "use_trajectories": cfg.MODEL.USE_TRAJECTORIES,
-            "trajectory_frames": cfg.DATA.NUM_FRAMES * 4 * 2, # *4 for four coordinates, *2 for s & o respectively
+            "num_frames": cfg.DATA.NUM_FRAMES,
+            "use_relativity_feat": cfg.MODEL.USE_RELATIVITY_FEAT,
+            "use_fcs": cfg.MODEL.USE_FCS,
+            "use_fc_proj_dim": cfg.MODEL.USE_FC_PROJ_DIM,
+            "proj_dim": cfg.MODEL.HOI_BOX_HEAD.PROJ_DIM,
+            "n_additional_feats": n_additional_feats,
         }
 
     def forward(self, u_x, p_x, o_x):

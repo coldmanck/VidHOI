@@ -86,11 +86,16 @@ def train_epoch(
         optim.set_lr(optimizer, lr)
 
         # Compute the predictions.
+        trajectories = human_poses = trajectory_boxes = None
         if cfg.MODEL.USE_TRAJECTORIES:
-            preds, action_labels, bbox_pair_ids = model(inputs, meta["boxes"], meta['obj_classes'], meta['obj_classes_lengths'], meta['action_labels'], trajectories=meta['trajectories'])
-            # import pdb; pdb.set_trace()
-        else:
-            preds, action_labels, bbox_pair_ids = model(inputs, meta["boxes"], meta['obj_classes'], meta['obj_classes_lengths'], meta['action_labels'])
+            trajectories = meta['trajectories']
+        if cfg.MODEL.USE_HUMAN_POSES:
+            human_poses = meta['human_poses']
+        if cfg.DETECTION.ENABLE_TOI_POOLING or cfg.MODEL.USE_TRAJECTORY_CONV:
+            trajectory_boxes = meta['trajectory_boxes']
+        # if cfg.VIDOR.TEST_DEBUG:
+        #     import pdb; pdb.set_trace()
+        preds, action_labels, bbox_pair_ids = model(inputs, meta["boxes"], meta['obj_classes'], meta['obj_classes_lengths'], meta['action_labels'], trajectories=trajectories, human_poses=human_poses, trajectory_boxes=trajectory_boxes)
         
         # import pdb; pdb.set_trace()
         # self._log_accuracy()
@@ -179,10 +184,14 @@ def eval_epoch(val_loader, model, val_meter, cur_epoch, cfg, writer=None):
                 meta[key] = val.cuda(non_blocking=True)
 
         # Compute the predictions.
+        trajectories = human_poses = trajectory_boxes = None
         if cfg.MODEL.USE_TRAJECTORIES:
-            preds, action_labels, bbox_pair_ids, gt_bbox_pair_ids = model(inputs, meta["boxes"], meta['proposal_classes'], meta['proposal_lengths'], meta['action_labels'], meta['obj_classes'], meta['obj_classes_lengths'], trajectories=meta['trajectories'])
-        else:
-            preds, action_labels, bbox_pair_ids, gt_bbox_pair_ids = model(inputs, meta["boxes"], meta['proposal_classes'], meta['proposal_lengths'], meta['action_labels'], meta['obj_classes'], meta['obj_classes_lengths'])
+            trajectories = meta['trajectories']
+        if cfg.MODEL.USE_HUMAN_POSES:
+            human_poses = meta['human_poses']
+        if cfg.DETECTION.ENABLE_TOI_POOLING or cfg.MODEL.USE_TRAJECTORY_CONV:
+            trajectory_boxes = meta['trajectory_boxes']
+        preds, action_labels, bbox_pair_ids, gt_bbox_pair_ids = model(inputs, meta["boxes"], meta['proposal_classes'], meta['proposal_lengths'], meta['action_labels'], meta['obj_classes'], meta['obj_classes_lengths'], trajectories=trajectories, human_poses=human_poses, trajectory_boxes=trajectory_boxes)
 
         preds_score = F.sigmoid(preds).cpu()
         preds = preds_score >= 0.5 # Convert scores into 'True' or 'False'

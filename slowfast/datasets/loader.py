@@ -68,7 +68,7 @@ def hoi_collate(batch):
     collated_extra_data = {}
     for key in extra_data[0].keys():
         data = [d[key] for d in extra_data]
-        if key in ["boxes", "ori_boxes", "obj_classes", "action_labels", "gt_boxes", "proposal_classes", "proposal_scores", "trajectories"]:
+        if key in ["boxes", "ori_boxes", "obj_classes", "action_labels", "gt_boxes", "proposal_classes", "proposal_scores", "trajectories", "human_poses", "trajectory_boxes"]:
             # Append idx info to the bboxes before concatenating them.
             if key in ['obj_classes', 'proposal_classes', 'proposal_scores']: # use a mask
                 max_len = max([len(i) for i in data])

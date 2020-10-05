@@ -5,7 +5,7 @@
 from slowfast.utils.misc import launch_job
 from slowfast.utils.parser import load_config, parse_args
 
-# from demo_net import demo
+# from demo_net_vidor import demo
 from test_net_vidor import test
 from train_net_vidor import train
 # from visualization import visualize
