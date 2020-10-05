@@ -15,6 +15,7 @@ pip install -r requirements.txt
 VidOR dataset is used. One may download the dataset and the original annotation at [the official website](https://xdshang.github.io/docs/vidor.html). For HOI-specific annotation, refer to `$ROOT/slowfast/dataset/vidor`.
 
 ## Experiments
+For checking each model's final performance including mAP, use `$ROOT/vidor_eval.ipynb`.
 
 ### Image Baseline
 - Training: Run 

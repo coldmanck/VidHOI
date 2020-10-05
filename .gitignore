@@ -6,7 +6,11 @@ core.*
 output/*
 
 slowfast/datasets/ava
-slowfast/datasets/vidor
+slowfast/datasets/vidor/annotation
+slowfast/datasets/vidor/frame_lists
+slowfast/datasets/vidor/frames
+slowfast/datasets/vidor/frames.zip
+slowfast/datasets/vidor/video
 
 trained_models/*
 pretrained_models/*
