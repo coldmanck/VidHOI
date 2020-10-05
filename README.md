@@ -3,7 +3,13 @@
 This repo includes models and experiment codes of temporal-aware human-object interaction detection done during Meng-Jiun's research internship at ASUS AICS.
 
 ## Installation
-Refer to OLD_README.md to install SlowFast and detectron2.
+```
+conda create -n slowfast python=3.6
+conda activate slowfast
+# Install PyTorch 1.4.0 and torchvision 0.5.0 first
+pip install -r requirements.txt
+# Then refer to OLD_README.md to install SlowFast and detectron2.
+```
 
 ## Dataset
 VidOR dataset is used. One may download the dataset and the original annotation at [the official website](https://xdshang.github.io/docs/vidor.html). For HOI-specific annotation, refer to `$ROOT/slowfast/dataset/vidor`.
