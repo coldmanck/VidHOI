@@ -136,7 +136,7 @@ def scale_boxes(size, boxes, height, width, gt_boxes=None):
     return boxes if gt_boxes is None else boxes, gt_boxes
 
 
-def horizontal_flip_list(prob, images, order="CHW", boxes=None, gt_boxes=None):
+def horizontal_flip_list(prob, images, order="CHW", boxes=None, gt_boxes=None, n_imgs=0, USE_SPA_CONF=False):
     """
     Horizontally flip the list of image and optional boxes.
     Args:
@@ -164,7 +164,19 @@ def horizontal_flip_list(prob, images, order="CHW", boxes=None, gt_boxes=None):
                 out_images.append(image.swapaxes(0, 2))
             return out_images, boxes
         elif order == "HWC":
-            return [cv2.flip(image, 1) for image in images], boxes
+            # try:
+            # print('images.shape:', [image.shape for image in images])
+            # print('len(images):', len(images))
+            # print('images.shape:', [image.shape for image in images])
+            if USE_SPA_CONF:
+                # for image in images[:n_imgs]:
+                images[:n_imgs] = [cv2.flip(image, 1) for image in images[:n_imgs]]
+                images[n_imgs:] = [np.expand_dims(cv2.flip(np.squeeze(image), 1), -1) for image in images[n_imgs:]]
+                return images, boxes
+            else:
+                return [cv2.flip(image, 1) for image in images], boxes
+            # except:
+            #     import pdb; pdb.set_trace()
     return images, boxes
 
 
@@ -244,6 +256,7 @@ def HWC2CHW(image):
     Returns
         (array): transposed image.
     """
+    # print(image.shape)
     return image.transpose([2, 0, 1])
 
 
@@ -401,7 +414,7 @@ def crop_boxes(boxes, x_offset, y_offset):
     return boxes
 
 
-def random_crop_list(images, size, pad_size=0, order="CHW", boxes=None):
+def random_crop_list(images, size, pad_size=0, order="CHW", boxes=None, n_imgs=0, USE_SPA_CONF=False):
     """
     Perform random crop on a list of images.
     Args:
@@ -453,10 +466,18 @@ def random_crop_list(images, size, pad_size=0, order="CHW", boxes=None):
         x_offset = 0
         if width > size:
             x_offset = int(np.random.randint(0, width - size))
-        cropped = [
-            image[y_offset : y_offset + size, x_offset : x_offset + size, :]
-            for image in images
-        ]
+        if USE_SPA_CONF:
+            cropped = []
+            for image in images[:n_imgs]:
+                cropped.append(image[y_offset : y_offset + size, x_offset : x_offset + size, :])
+            # import pdb; pdb.set_trace()
+            for image in images[n_imgs:]:
+                cropped.append(np.expand_dims(image[y_offset : y_offset + size, x_offset : x_offset + size], -1))
+        else:
+            cropped = [
+                image[y_offset : y_offset + size, x_offset : x_offset + size, :]
+                for image in images
+            ]
         assert cropped[0].shape[0] == size, "Image not cropped properly"
         assert cropped[0].shape[1] == size, "Image not cropped properly"
 

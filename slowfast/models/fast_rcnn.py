@@ -671,6 +671,8 @@ class HoiOutputLayers(nn.Module):
         use_fc_proj_dim=False,
         proj_dim=256,
         n_additional_feats=0,
+        use_spa_conf=False,
+        spa_conf_dim=256,
     ):
         """
         Args:
@@ -683,6 +685,9 @@ class HoiOutputLayers(nn.Module):
         if isinstance(input_shape, int):  # some backward compatbility
             input_shape = ShapeSpec(channels=input_shape)
         input_size = input_shape.channels * (input_shape.width or 1) * (input_shape.height or 1)
+
+        self.use_trajectories = use_trajectories
+        self.use_spa_conf = use_spa_conf
         # The prediction layer for num_classes foreground classes. The input should be
         # features from person, object and union region. Thus, the input size * 3.
         # self.cls_fc1 = Linear(input_size * 3 + trajectory_frames if use_trajectories else input_size * 3, input_size)
@@ -692,6 +697,8 @@ class HoiOutputLayers(nn.Module):
             if use_relativity_feat: 
                 # C (32*2), S (32*2), M (31*2)
                 trajectory_frames = num_frames * 2 * 2 + (num_frames - 1) * 2
+            elif use_spa_conf:
+                trajectory_frames = num_frames * 4 * 2 + spa_conf_dim
             else:
                 # *4 for four coordinates, *2 for s & o respectively
                 trajectory_frames = num_frames * 4 * 2
@@ -755,14 +762,20 @@ class HoiOutputLayers(nn.Module):
             "use_fc_proj_dim": cfg.MODEL.USE_FC_PROJ_DIM,
             "proj_dim": cfg.MODEL.HOI_BOX_HEAD.PROJ_DIM,
             "n_additional_feats": n_additional_feats,
+            "use_spa_conf": cfg.MODEL.USE_SPA_CONF,
+            "spa_conf_dim": cfg.MODEL.SPA_CONF_FC_DIM,
         }
 
-    def forward(self, u_x, p_x, o_x):
+    def forward(self, u_x, p_x, o_x, spa_conf_maps=None):
         """
         Returns:
             Tensor: NxK scores for each human-object pair
         """
-        x = torch.cat([u_x, p_x, o_x], dim=-1)
+        if self.use_spa_conf:
+            assert spa_conf_maps is not None
+            x = torch.cat([spa_conf_maps, u_x, p_x, o_x], dim=-1)
+        else:
+            x = torch.cat([u_x, p_x, o_x], dim=-1)
         x = F.relu(self.cls_fc1(x))
         x = self.cls_score(x)
         return x

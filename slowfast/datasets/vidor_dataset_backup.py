@@ -52,15 +52,10 @@ class Vidor(torch.utils.data.Dataset):
         self.multigrid_enabled = cfg.MULTIGRID.ENABLE
         
         if self.cfg.MODEL.USE_TRAJECTORIES:
-            if split == 'train':
-                self.trajectories_path = cfg.VIDOR.TRAIN_GT_TRAJECTORIES 
-            elif self.cfg.VIDOR.TEST_WITH_GT: # testing with GT
-                self.trajectories_path = cfg.VIDOR.TEST_GT_TRAJECTORIES
-            else: # testing with detected boxes
-                self.trajectories_path = cfg.VIDOR.TEST_TRAJECTORIES
+            self.trajectories_path = cfg.VIDOR.TRAIN_GT_TRAJECTORIES if split == 'train' else cfg.VIDOR.TEST_GT_TRAJECTORIES
 
         if self.cfg.MODEL.USE_SPA_CONF:
-            self.human_poses_path = 'human_poses' if split == 'train' or self.cfg.VIDOR.TEST_WITH_GT else 'human_poses_detected-bboxes'
+            self.human_poses_path = 'human_poses'
             # self.heatmap_size = cfg.MODEL.SPA_CONF_HEATMAP_SIZE
             self.skeletons = [[16, 14], [14, 12], [17, 15], [15, 13], [12, 13], [6, 12],
                               [7, 13], [6, 7], [6, 8], [7, 9], [8, 10], [9, 11], [2, 3], 
@@ -111,7 +106,7 @@ class Vidor(torch.utils.data.Dataset):
         (
             self._keyframe_indices,
             self._keyframe_boxes_and_labels,
-        ) = vidor_helper.get_keyframe_data(cfg, self._instances, mode=self._split)
+        ) = vidor_helper.get_keyframe_data(self._instances, mode=self._split)
 
         # import pdb; pdb.set_trace()
 
@@ -233,13 +228,10 @@ class Vidor(torch.utils.data.Dataset):
 
         # Convert image to CHW keeping BGR order.
         if self.cfg.MODEL.USE_SPA_CONF:
-            try:
-                if len(imgs[n_imgs].shape) == 2:
-                    imgs[n_imgs:] = [np.expand_dims(img, axis=-1) for img in imgs[n_imgs:]]
-                elif len(imgs[n_imgs].shape) > 3:
-                    imgs[n_imgs:] = [np.expand_dims(img.squeeze(), axis=-1) for img in imgs[n_imgs:]]
-            except:
-                import pdb; pdb.set_trace()
+            if len(imgs[n_imgs].shape) == 2:
+                imgs[n_imgs:] = [np.expand_dims(img, axis=-1) for img in imgs[n_imgs:]]
+            elif len(imgs[n_imgs].shape) > 3:
+                imgs[n_imgs:] = [np.expand_dims(img.squeeze(), axis=-1) for img in imgs[n_imgs:]]
                 
             # for i in range(n_imgs, len(imgs) + 1):
             #     imgs[i] = np.expand_dims(imgs[i], axis=-1)
@@ -525,13 +517,11 @@ class Vidor(torch.utils.data.Dataset):
         if self.is_baseline:
             num_frames = len(self._image_paths[video_idx])
             if center_idx < 0:
-                center_idx = 0
-                # seq = [0]
+                seq = [0]
             elif center_idx >= num_frames:
-                center_idx = num_frames - 1
-                # seq = [num_frames - 1]
-            # else:
-            seq = [center_idx]
+                seq = [num_frames - 1]
+            else:
+                seq = [center_idx]
         else:
             seq = utils.get_sequence(
                 center_idx,
@@ -555,8 +545,8 @@ class Vidor(torch.utils.data.Dataset):
             proposal_boxes = np.array(clip_label_list[5])
             proposal_classes = np.array(clip_label_list[6])
             proposal_scores = np.array(clip_label_list[7])
-            if not self.cfg.VIDOR.TEST_WITH_GT:
-                proposal_ids = clip_label_list[8]
+            # proposal_ids_to_idxs = clip_label_list[8]
+            # proposal_idxs_to_ids = clip_label_list[9]
             
             gt_boxes = boxes
             ori_boxes = proposal_boxes.copy()
@@ -579,7 +569,7 @@ class Vidor(torch.utils.data.Dataset):
         if self.cfg.DETECTION.ENABLE_TOI_POOLING or self.cfg.MODEL.USE_TRAJECTORY_CONV or self.cfg.MODEL.USE_SPA_CONF:
             assert self.cfg.MODEL.USE_TRAJECTORIES
             all_trajectories = [self._trajectories[orig_video_idx][frame] for frame in seq]
-            boxes_ids = [gt_idxs_to_ids[i] for i in range(n_boxes)] if self._split == 'train' or self.cfg.VIDOR.TEST_WITH_GT else proposal_ids
+            boxes_ids = [gt_idxs_to_ids[i] for i in range(n_boxes)]
             trajectories = []
             for j, frame in enumerate(seq):
                 trajectory = []
@@ -608,18 +598,10 @@ class Vidor(torch.utils.data.Dataset):
             json_path = os.path.join(self._human_poses_root, orig_video_idx + '.json')
             with open(json_path, 'r') as f:
                 human_poses = json.load(f)
-            
+
             # human_poses = self._human_poses[orig_video_idx]
-            boxes_ids = [gt_idxs_to_ids[i] for i in range(n_boxes)] if self._split == 'train' or self.cfg.VIDOR.TEST_WITH_GT else proposal_ids
-            try:
-                if self._split == 'train' or self.cfg.VIDOR.TEST_WITH_GT:
-                    boxes_ids = [gt_idxs_to_ids[i] for i in range(n_boxes)]
-                    human_poses = [human_poses[str(boxes_ids[jdx])] for jdx, obj_class in enumerate(obj_classes) if obj_class == 0]
-                else:
-                    boxes_ids = proposal_ids
-                    human_poses = [human_poses[str(boxes_ids[jdx])] for jdx, obj_class in enumerate(proposal_classes) if obj_class == 0]
-            except:
-                import pdb; pdb.set_trace()
+            boxes_ids = [gt_idxs_to_ids[i] for i in range(n_boxes)]
+            human_poses = [human_poses[str(boxes_ids[jdx])] for jdx, obj_class in enumerate(obj_classes) if obj_class == 0]
             full_human_pose_maps = np.zeros((len(human_poses), len(seq), orig_img_height, orig_img_width))
             # scale_x = self.heatmap_size / orig_img_width
             # scale_y = self.heatmap_size / orig_img_height
@@ -631,18 +613,12 @@ class Vidor(torch.utils.data.Dataset):
             # full_human_pose_maps = shape (n_person, 32, orig_img_height, orig_img_width)
             n_person = full_human_pose_maps.shape[0]
             full_human_pose_maps = full_human_pose_maps.reshape(-1, orig_img_height, orig_img_width)
-            
             # import pdb; pdb.set_trace()
             imgs.extend([np.expand_dims(full_human_pose_maps[i], axis=-1) for i in range(n_person * self.cfg.DATA.NUM_FRAMES)])
             
             # box_maps = np.zeros((n_boxes, orig_img_height, orig_img_width))
             # n_person = human_poses.shape[0]
             # pose_maps = np.zeros((n_person, orig_img_height, orig_img_width))
-
-            no_human_pose_used = False
-            if n_imgs == len(imgs): # no human pose used!
-                print('skipping 1 img for pose module due to no human pose detected!')
-                no_human_pose_used = True
 
         if self.cfg.VIDOR.IMG_PROC_BACKEND == "pytorch": # False
             # T H W C -> T C H W.
@@ -675,7 +651,7 @@ class Vidor(torch.utils.data.Dataset):
             else:
                 if self.cfg.MODEL.USE_SPA_CONF:
                     imgs, skeleton_imgs, boxes, gt_boxes = self._images_and_boxes_preprocessing_cv2(
-                        imgs, boxes=boxes, gt_boxes=gt_boxes, n_imgs=n_imgs, 
+                        imgs, boxes=boxes, gt_boxes=gt_boxes, n_imgs=n_imgs
                     )
                 else:
                     imgs, boxes, gt_boxes = self._images_and_boxes_preprocessing_cv2(
@@ -703,7 +679,7 @@ class Vidor(torch.utils.data.Dataset):
         
         if self.cfg.MODEL.USE_TRAJECTORIES:
             all_trajectories = [self._trajectories[orig_video_idx][frame] for frame in seq]
-            boxes_ids = [gt_idxs_to_ids[i] for i in range(len(boxes))] if self._split == 'train' or self.cfg.VIDOR.TEST_WITH_GT else proposal_ids
+            boxes_ids = [gt_idxs_to_ids[i] for i in range(len(boxes))]
             trajectories = []
             for j, frame in enumerate(seq):
                 trajectory = []
@@ -711,13 +687,10 @@ class Vidor(torch.utils.data.Dataset):
                 for i in boxes_ids:
                     found = False
                     for traj in all_trajectory:
-                        try:
-                            if traj['tid'] == i:
-                                trajectory.append(list(traj['bbox'].values()))
-                                found = True
-                                break
-                        except:
-                            import pdb; pdb.set_trace()
+                        if traj['tid'] == i:
+                            trajectory.append(list(traj['bbox'].values()))
+                            found = True
+                            break
                     if not found:
                         trajectory.append([0, 0, imgs[0].shape[1], imgs[0].shape[0]]) # if that object doesn't exist then use whole-img bbox
                 trajectories.append(trajectory)
@@ -775,8 +748,8 @@ class Vidor(torch.utils.data.Dataset):
             extra_data['proposal_classes'] = proposal_classes
             extra_data['proposal_scores'] = proposal_scores
 
-        if self.cfg.DEMO.ENABLE or self.cfg.DEMO.ENABLE_ALL:
-            extra_data['orig_video_idx'] = orig_video_idx + '/' + orig_video_idx.split('/')[1] + '_' + f'{center_idx+1:06d}'
+        if self.cfg.DEMO.ENABLE:
+            extra_data['orig_video_idx'] = orig_video_idx
 
         # print('imgs[0].shape:', imgs[0].shape, 'extra_data["boxes"][0].shape:', extra_data['boxes'][0].shape)
 

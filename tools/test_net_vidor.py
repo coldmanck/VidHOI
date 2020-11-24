@@ -69,6 +69,9 @@ def perform_test(test_loader, model, cfg, writer=None):
                 continue
             found = True
             meta.pop('orig_video_idx')
+        elif cfg.DEMO.ENABLE_ALL:
+            orig_video_idx = meta['orig_video_idx']
+            meta.pop('orig_video_idx')
 
         # Transfer the data to the current GPU device.
         if isinstance(inputs, (list,)):
@@ -91,14 +94,17 @@ def perform_test(test_loader, model, cfg, writer=None):
             use_proposal = True
         # preds, action_labels, bbox_pair_ids = model(inputs, meta["boxes"], meta['obj_classes'], meta['obj_classes_lengths'], meta['action_labels'])
         
-        trajectories = human_poses = trajectory_boxes = None
+        trajectories = human_poses = trajectory_boxes = skeleton_imgs = trajectory_box_masks = None
         if cfg.MODEL.USE_TRAJECTORIES:
             trajectories = meta['trajectories']
         if cfg.MODEL.USE_HUMAN_POSES:
             human_poses = meta['human_poses']
         if cfg.DETECTION.ENABLE_TOI_POOLING or cfg.MODEL.USE_TRAJECTORY_CONV:
             trajectory_boxes = meta['trajectory_boxes']
-        preds, action_labels, bbox_pair_ids, gt_bbox_pair_ids = model(inputs, meta["boxes"], meta['proposal_classes'], meta['proposal_lengths'], meta['action_labels'], meta['obj_classes'], meta['obj_classes_lengths'], trajectories=trajectories, human_poses=human_poses, trajectory_boxes=trajectory_boxes)
+        if cfg.MODEL.USE_SPA_CONF:
+            skeleton_imgs = meta['skeleton_imgs']
+            trajectory_box_masks = meta['trajectory_box_masks']
+        preds, action_labels, bbox_pair_ids, gt_bbox_pair_ids = model(inputs, meta["boxes"], meta['proposal_classes'], meta['proposal_lengths'], meta['action_labels'], meta['obj_classes'], meta['obj_classes_lengths'], trajectories=trajectories, human_poses=human_poses, trajectory_boxes=trajectory_boxes, skeleton_imgs=skeleton_imgs, trajectory_box_masks=trajectory_box_masks)
 
         preds_score = F.sigmoid(preds).cpu()
         preds = preds_score >= 0.5 # Convert scores into 'True' or 'False'
@@ -127,7 +133,7 @@ def perform_test(test_loader, model, cfg, writer=None):
             gt_boxes = torch.cat(du.all_gather_unaligned(gt_boxes), dim=0)
             proposal_classes = torch.cat(du.all_gather_unaligned(proposal_classes), dim=0)
 
-        all_results.append({
+        results = {
             'preds_score': preds_score.detach().cpu().tolist(),
             'preds': preds.detach().cpu().tolist(),
             'preds_bbox_pair_ids': bbox_pair_ids.detach().cpu().tolist(),
@@ -140,7 +146,12 @@ def perform_test(test_loader, model, cfg, writer=None):
             'gt_bbox_pair_ids': gt_bbox_pair_ids.detach().cpu().tolist(),
             # 'obj_classes_lengths': obj_classes_lengths.detach().cpu().tolist(),
             # 'hopairs': hopairs.detach().cpu().tolist() if isinstance(hopairs, torch.Tensor) else hopairs
-        })
+        }
+        
+        if cfg.DEMO.ENABLE_ALL:
+            results['orig_video_idx'] = orig_video_idx
+
+        all_results.append(results)
 
         # import pdb; pdb.set_trace()
 
@@ -165,8 +176,12 @@ def perform_test(test_loader, model, cfg, writer=None):
         save_file_name += '_debug'
     if use_proposal:
         save_file_name += '_proposal'
+    if cfg.VIDOR.TEST_GT_LESS_TO_ALIGN_NONGT:
+        save_file_name += '_less-168-examples'
     if cfg.DEMO.ENABLE:
-        save_file_name += '_demo_' + '_'.join(cfg.DEMO.VIDEO_IDX.split('/')) + '_'
+        save_file_name += '_demo' + '_'.join(cfg.DEMO.VIDEO_IDX.split('/'))
+    elif cfg.DEMO.ENABLE_ALL:
+        save_file_name += '_demo-all'
     save_file_name += '.json'
 
     print(f'Saving to {save_file_name}')

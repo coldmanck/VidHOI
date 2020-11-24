@@ -122,12 +122,11 @@ def load_boxes_and_labels(cfg, mode):
     #     else cfg.VIDOR.TEST_PREDICT_BOX_LISTS
     # )
     pred_lists = [] if mode == "train" else cfg.VIDOR.TEST_PREDICT_BOX_LISTS
-    # pred_lists = []
     ### ONLY FOR DEBUG PURPOSE: ONLY USE GT BBOXES FOR BOTH TRAIN & VAL! ###
 
     ann_filenames = [
         os.path.join(cfg.VIDOR.ANNOTATION_DIR, filename)
-        for filename in gt_lists + pred_lists
+        for filename in gt_lists # + pred_lists
     ]
     ann_is_gt_box = [True] * len(gt_lists)#  + [False] * len(pred_lists)
 
@@ -139,27 +138,12 @@ def load_boxes_and_labels(cfg, mode):
 
     if mode != 'train':
         val_instance_pred_path = os.path.join(cfg.VIDOR.ANNOTATION_DIR, pred_lists[0])
-        if cfg.VIDOR.TEST_WITH_GT:
-            with open(val_instance_pred_path, 'rb') as f:
-                inst = torch.load(f)
-            inst = {ins['image_id']:ins['instances'] for ins in inst}
-            if cfg.VIDOR.TEST_GT_LESS_TO_ALIGN_NONGT:
-                test_gt_box_lists_for_index = os.path.join(cfg.VIDOR.ANNOTATION_DIR, cfg.VIDOR.TEST_GT_BOX_LISTS_FOR_INDEX)
-                with open(test_gt_box_lists_for_index, 'r') as f:
-                    inst_temp = json.load(f)
-                frames_to_removed = set(inst.keys()) - set(inst_temp.keys()) # 168 examples
-                # inst = {inst[key] for key in inst.keys() if key not in frames_to_removed}
-                for key in frames_to_removed:
-                    inst.pop(key)
-        else:
-            with open(val_instance_pred_path, 'r') as f:
-                inst = json.load(f)
-            
+        with open(val_instance_pred_path, 'rb') as f:
+            inst = torch.load(f)
+        inst = {ins['image_id']:ins['instances'] for ins in inst}
 
     if cfg.VIDOR.TEST_WITH_GT:
         logger.info('testing with ground truth bboxes...')
-    else:
-        logger.info('testing with predicted bboxes...')
 
     instances = {}
     proposals = []
@@ -254,6 +238,10 @@ def load_boxes_and_labels(cfg, mode):
                 # import pdb; pdb.set_trace()
                 image_id = new_video_id + '_' + f"{ann['middle_frame_timestamp']+1:06d}"
                 if image_id in inst:
+                    proposal_boxes = []
+                    proposal_classes = []
+                    proposal_scores = []
+                    
                     if cfg.VIDOR.TEST_WITH_GT: # FOR DEBUG PURPOSE!
                         instances[new_video_id][ann['middle_frame_timestamp']]['proposal_boxes'] = instances[new_video_id][ann['middle_frame_timestamp']]['gt_boxes']
                         instances[new_video_id][ann['middle_frame_timestamp']]['proposal_classes'] = instances[new_video_id][ann['middle_frame_timestamp']]['gt_classes']
@@ -262,54 +250,24 @@ def load_boxes_and_labels(cfg, mode):
                         instances[new_video_id][ann['middle_frame_timestamp']]['proposal_ids_to_boxes'] = instances[new_video_id][ann['middle_frame_timestamp']]['gt_idxs_to_ids']
                     else:
                         # Skip no instance predicted validation frames for now
-                        if cfg.VIDOR.TEST_DEBUG:
-                            # import pdb; pdb.set_trace()
-                            pass
-
                         if len(inst[image_id]) == 0:
                             print(f'image id {image_id} skipped due to no instance predicted!')
                             del instances[new_video_id][ann['middle_frame_timestamp']]
                             continue
 
-                        at_least_one_det_used = at_least_one_person_det = False
-                        proposal_boxes = []
-                        proposal_classes = []
-                        proposal_scores = []
-                        proposal_ids = []
                         for annot in inst[image_id]: # for each inst prediction in an image
                             if annot['score'] < detect_thresh: # 0.0
-                                continue
-                            at_least_one_det_used = True
-                            if annot['category_id'] == 0:
-                                at_least_one_person_det = True
-                            # bb = annot['bbox']
-                            # x1, y1, x2, y2 = bb[0], bb[1], bb[0] + bb[2], bb[1] + bb[3]
-                            proposal_boxes.append(annot['bbox']) # [x1, y1, x2, y2]
+                                break
+                            bb = annot['bbox']
+                            x1, y1, x2, y2 = bb[0], bb[1], bb[0] + bb[2], bb[1] + bb[3]
+                            proposal_boxes.append([x1, y1, x2, y2])
                             proposal_classes.append(annot['category_id'])
                             proposal_scores.append(annot['score'])
-                            proposal_ids.append(annot['tid'])
-
-                        if not at_least_one_det_used:
-                            print(f'image id {image_id} skipped due to no instance predicted!')
-                            del instances[new_video_id][ann['middle_frame_timestamp']]
-                            continue
-                        if cfg.MODEL.USE_SPA_CONF: # skip unvalid pair features for SPA_CONF
-                            if not at_least_one_person_det:
-                                print(f'image id {image_id} skipped due to no human predicted!')
-                                del instances[new_video_id][ann['middle_frame_timestamp']]
-                                continue
-                            if len(proposal_boxes) < 2: # not at_least_one_valid_pair
-                                print(f'image id {image_id} skipped due to no any valid HOI pair detected!')
-                                del instances[new_video_id][ann['middle_frame_timestamp']]
-                                continue
-                        
                         instances[new_video_id][ann['middle_frame_timestamp']]['proposal_boxes'] = proposal_boxes
                         instances[new_video_id][ann['middle_frame_timestamp']]['proposal_classes'] = proposal_classes
                         instances[new_video_id][ann['middle_frame_timestamp']]['proposal_scores'] = proposal_scores
                         ### NOTE that unique boxes tracking mechanism not implemented yet -> currently only work for GT testing ###
-                        # instances[new_video_id][ann['middle_frame_timestamp']]['proposal_boxes_to_ids'] = instances[new_video_id][ann['middle_frame_timestamp']]['ids_to_idxs']
-                        # instances[new_video_id][ann['middle_frame_timestamp']]['proposal_ids_to_boxes'] = instances[new_video_id][ann['middle_frame_timestamp']]['idxs_to_ids']
-                        instances[new_video_id][ann['middle_frame_timestamp']]['proposal_ids'] = proposal_ids
+                        # instances[new_video_id][ann['middle_frame_timestamp']]['proposal_boxes_to_ids'] = instances[new_video_id][ann['middle_frame_timestamp']]['boxes_to_ids']
                         ### NOTE that unique boxes tracking mechanism not implemented yet -> currently only work for GT testing ###
             
             # import pdb; pdb.set_trace()
@@ -359,7 +317,7 @@ def load_boxes_and_labels(cfg, mode):
     return instances # or proposals
 
 
-def get_keyframe_data(cfg, instances, mode):
+def get_keyframe_data(instances, mode):
     """
     Getting keyframe indices, boxes and labels in the dataset.
 
@@ -385,7 +343,6 @@ def get_keyframe_data(cfg, instances, mode):
     keyframe_boxes_and_labels = []
     count = 0
     pred_count = 0
-    hoi_count = 0
     # keyframes_set = set()
     for i, video_idx in enumerate(instances.keys()):
         sec_idx = 0
@@ -394,16 +351,13 @@ def get_keyframe_data(cfg, instances, mode):
             # if sec not in AVA_VALID_FRAMES:
             #     continue
             if len(instances[video_idx][sec]['gt_boxes']) > 0:
-                if mode != 'train' and 'proposal_boxes' not in instances[video_idx][sec]:
-                    continue
-
                 keyframe_indices.append(
                     (i, sec_idx, sec, sec_to_frame(sec, instances[video_idx][sec]['video_fps']), video_idx)
                 )
                 
                 # generate a set of keyframes indexes for later use
                 # keyframes_set.add((video_idx, sec))
-                hoi_count += len(instances[video_idx][sec]['gt_actions'])
+
                 keyframe_boxes_and_labels[i].append([
                     instances[video_idx][sec]['gt_boxes'], 
                     instances[video_idx][sec]['gt_classes'], 
@@ -412,27 +366,19 @@ def get_keyframe_data(cfg, instances, mode):
                     instances[video_idx][sec]['gt_idxs_to_ids'],
                 ])
                 if mode != 'train' and 'proposal_boxes' in instances[video_idx][sec]:
-                    if cfg.VIDOR.TEST_WITH_GT:
-                        keyframe_boxes_and_labels[i][-1].extend([
-                            instances[video_idx][sec]['proposal_boxes'],
-                            instances[video_idx][sec]['proposal_classes'],
-                            instances[video_idx][sec]['proposal_scores'],
-                        ])
-                    else:
-                        keyframe_boxes_and_labels[i][-1].extend([
-                            instances[video_idx][sec]['proposal_boxes'],
-                            instances[video_idx][sec]['proposal_classes'],
-                            instances[video_idx][sec]['proposal_scores'],
-                            instances[video_idx][sec]['proposal_ids'],
-                        ])
+                    keyframe_boxes_and_labels[i][-1].extend([
+                        instances[video_idx][sec]['proposal_boxes'],
+                        instances[video_idx][sec]['proposal_classes'],
+                        instances[video_idx][sec]['proposal_scores'],
+                        # instances[video_idx][sec]['proposal_ids_to_idxs'],
+                        # instances[video_idx][sec]['proposal_idxs_to_ids'],
+                    ])
                     pred_count += 1
 
                 sec_idx += 1
                 count += 1
-
     logger.info("%d keyframes used." % count)
     logger.info("%d predicted keyframes used." % pred_count)
-    logger.info("%d GT HOI interactions used." % hoi_count)
 
     # save a set of keyframes indexes for later use
     # import pickle

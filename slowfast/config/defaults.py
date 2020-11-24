@@ -189,7 +189,7 @@ _C.MODEL.NUM_CLASSES = 400
 _C.MODEL.LOSS_FUNC = "cross_entropy"
 
 # Model architectures that has one single pathway.
-_C.MODEL.SINGLE_PATHWAY_ARCH = ["c2d", "i3d", "slow", "baseline"]
+_C.MODEL.SINGLE_PATHWAY_ARCH = ["c2d", "i3d", "slow", "baseline", "fast"]
 
 # Model architectures that has multiple pathways.
 _C.MODEL.MULTI_PATHWAY_ARCH = ["slowfast"]
@@ -269,6 +269,9 @@ _C.MODEL.SEPARATE_SUBJ_OBJ_FC = False # Use different FCs for subjects (person),
 _C.MODEL.USE_TRAJECTORY_CONV = False
 _C.MODEL.USE_BN = False # Use batch normalization for additional features. MUST INCLUDE *bn* in the module name for the optimizer to work properly.
 _C.MODEL.USE_SPA_CONF = False # Use Spatial Configuration Module to incorporate trajectories and human poses 
+_C.MODEL.SPA_CONF_HEATMAP_SIZE = 128 # Not used for now (now after cropping, heatmaps are directly resized to 32*32)
+
+_C.MODEL.SPA_CONF_FC_DIM = 256
 
 # -----------------------------------------------------------------------------
 # SlowFast options
@@ -535,15 +538,18 @@ _C.VIDOR.TEST_LISTS = ["val.csv"]
 _C.VIDOR.TRAIN_GT_BOX_LISTS = ['train_frame_annots.json'] 
 _C.VIDOR.TRAIN_GT_TRAJECTORIES = 'train_trajectories.json'
 _C.VIDOR.TRAIN_GT_HUMAN_POSES = 'vidor_training_3d_human_poses_from_VIBE.pkl'
-_C.VIDOR.TRAIN_GT_SPA_CONF = 'vidor_training_human_poses_from_hrnet_debug.pkl'
+# _C.VIDOR.TRAIN_GT_SPA_CONF = 'vidor_training_human_poses_from_hrnet_debug.pkl'
 _C.VIDOR.TRAIN_PREDICT_BOX_LISTS = []
 
 # Filenames of box list files for test.
 _C.VIDOR.TEST_GT_BOX_LISTS = ['val_frame_annots.json']
+_C.VIDOR.TEST_TRAJECTORIES = 'det_val_trajectories.json' 
 _C.VIDOR.TEST_GT_TRAJECTORIES = 'val_trajectories.json' 
 _C.VIDOR.TEST_GT_HUMAN_POSES = 'vidor_validation_3d_human_poses_from_VIBE.pkl'
-_C.VIDOR.TEST_GT_SPA_CONF = 'vidor_training_human_poses_from_hrnet_debug.pkl'
-_C.VIDOR.TEST_PREDICT_BOX_LISTS = ['val_frame_annots.json'] # use GT for now
+# _C.VIDOR.TEST_GT_SPA_CONF = 'vidor_training_human_poses_from_hrnet_debug.pkl'
+# _C.VIDOR.TEST_PREDICT_BOX_LISTS = ['val_frame_annots.json'] # use GT for now
+_C.VIDOR.TEST_PREDICT_BOX_LISTS = ['det_val_frame_annots.json']
+_C.VIDOR.TEST_GT_BOX_LISTS_FOR_INDEX = 'det_val_frame_annots.json'
 
 # This option controls the score threshold for the predicted boxes to use.
 _C.VIDOR.DETECTION_SCORE_THRESH = 0.5
@@ -591,6 +597,9 @@ _C.VIDOR.TEST_DEBUG = False
 
 # Testing with gt bounding boxes
 _C.VIDOR.TEST_WITH_GT = False
+
+# Removing 168 examples from total 22976 examples to align with the number of frames with a detection result
+_C.VIDOR.TEST_GT_LESS_TO_ALIGN_NONGT = True
 
 # -----------------------------------------------------------------------------
 # AVA Dataset options
@@ -865,6 +874,7 @@ _C.DEMO.SLOWMO = 1
 # Below options are added by MJ Chiou
 _C.DEMO.VIDEO_IDX = ""
 _C.DEMO.SPLIT = "test"
+_C.DEMO.ENABLE_ALL = False
 
 # _C.DEMO = CfgNode()
 

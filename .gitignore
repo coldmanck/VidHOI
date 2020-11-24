@@ -12,6 +12,8 @@ slowfast/datasets/vidor/frames
 slowfast/datasets/vidor/frames.zip
 slowfast/datasets/vidor/video
 
+demo/*
+
 trained_models/*
 pretrained_models/*
 
@@ -22,7 +24,7 @@ build/*
 slowfast.egg-info/*
 
 .ipynb_checkpoints
-.vs_code
+.vs_code/*
 # .ipynb_checkpoints
 
 __pycache__

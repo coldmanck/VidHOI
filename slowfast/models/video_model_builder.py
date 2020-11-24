@@ -60,6 +60,13 @@ _TEMPORAL_KERNEL_BASIS = {
         [[3], [3]],  # res4 temporal kernel for slow and fast pathway.
         [[3], [3]],  # res5 temporal kernel for slow and fast pathway.
     ],
+    "fast": [
+        [[5]],  # conv1 temporal kernel 
+        [[3]],  # res2 temporal kernel 
+        [[3]],  # res3 temporal kernel 
+        [[3]],  # res4 temporal kernel
+        [[3]],  # res5 temporal kernel
+    ],
 }
 
 _POOL1 = {
@@ -69,6 +76,7 @@ _POOL1 = {
     "i3d_nopool": [[1, 1, 1]],
     "slow": [[1, 1, 1]],
     "slowfast": [[1, 1, 1], [1, 1, 1]],
+    "fast": [[1, 1, 1]],
     "baseline": [[1, 1, 1]],
 }
 
@@ -197,7 +205,7 @@ class Baseline(nn.Module):
         self.hoi_head = head_helper.HOIHead(cfg, 
             resolution=[cfg.DETECTION.ROI_XFORM_RESOLUTION] * 2, scale_factor=cfg.DETECTION.SPATIAL_SCALE_FACTOR, aligned=cfg.DETECTION.ALIGNED,)
      
-    def forward(self, x, bboxes=None, obj_classes=None, obj_classes_lengths=None, action_labels=None, gt_obj_classes=None, gt_obj_classes_lengths=None, trajectories=None, human_poses=None, trajectory_boxes=None):
+    def forward(self, x, bboxes=None, obj_classes=None, obj_classes_lengths=None, action_labels=None, gt_obj_classes=None, gt_obj_classes_lengths=None, trajectories=None, human_poses=None, trajectory_boxes=None, skeleton_imgs=None, trajectory_box_masks=None):
         # x is a list of single path way features. E.g.,
         # (Pdb) x[0].shape
         # torch.Size([batch_size, 3, 1, 224, 224])
@@ -514,7 +522,7 @@ class SlowFast(nn.Module):
                 act_func=cfg.MODEL.HEAD_ACT,
             )
 
-    def forward(self, x, bboxes=None, obj_classes=None, obj_classes_lengths=None, action_labels=None, gt_obj_classes=None, gt_obj_classes_lengths=None, trajectories=None, human_poses=None, trajectory_boxes=None):
+    def forward(self, x, bboxes=None, obj_classes=None, obj_classes_lengths=None, action_labels=None, gt_obj_classes=None, gt_obj_classes_lengths=None, trajectories=None, human_poses=None, trajectory_boxes=None, skeleton_imgs=None, trajectory_box_masks=None):
         # x is a list of two path way features. E.g.,
         # (Pdb) x[0].shape
         # torch.Size([batch_size, 3, 8, 224, 224])
@@ -540,7 +548,7 @@ class SlowFast(nn.Module):
             if self.enable_detection_hoi:
                 toi_pooled_features = self.toi_head(x, bboxes, trajectory_boxes) if self.enable_toi_pooling else None # need to go before x = self.head(x)
                 x = self.head(x)
-                x = self.hoi_head(x, bboxes, obj_classes, obj_classes_lengths, action_labels, gt_obj_classes, gt_obj_classes_lengths, trajectories, human_poses, toi_pooled_features, trajectory_boxes)
+                x = self.hoi_head(x, bboxes, obj_classes, obj_classes_lengths, action_labels, gt_obj_classes, gt_obj_classes_lengths, trajectories, human_poses, toi_pooled_features, trajectory_boxes, skeleton_imgs, trajectory_box_masks)
             else:
                 x = self.head(x, bboxes)
         else:
