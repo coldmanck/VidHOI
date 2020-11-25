@@ -2,8 +2,7 @@
 
 This repo includes models and experiment codes of "ST-HOI: A Spatial-Temporal Baseline for Human Object Interaction in Videos" (paper will be released soon).
 
-## Important
-Each experiment was performed with eight NVIDIA Tesla V100 GPU with 32G memory. Before running the following commands ensure that your GPUs have enough memories. Otherwise, you might need to reduce the batch size accordingly.
+Note that each experiment was performed with eight NVIDIA Tesla V100 GPU with 32G memory. Before running the following commands ensure that your GPUs have enough memories. Otherwise, you might need to reduce the batch size accordingly.
 
 ## Installation
 ```
