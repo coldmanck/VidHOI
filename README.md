@@ -1,13 +1,16 @@
-# A Temporal-based Approach for Human Object Interaction
+# ST-HOI
 
-This repo includes models and experiment codes of temporal-aware human-object interaction detection done during Meng-Jiun's research internship at ASUS AICS.
+This repo includes models and experiment codes of "ST-HOI: A Spatial-Temporal Baseline for Human Object Interaction in Videos" (paper will be released soon).
 
 ## Installation
 ```
-conda create -n slowfast python=3.6
+conda create -n slowfast python=3.6 scipy numpy
 conda activate slowfast
 # Install PyTorch 1.4.0 and torchvision 0.5.0 first
 pip install -r requirements.txt
+# Another way
+# conda create --name slowfast --file requirements.txt
+
 # Then refer to OLD_README.md to install SlowFast and detectron2.
 ```
 
@@ -17,9 +20,9 @@ VidOR dataset is used. One may download the dataset and the original annotation 
 One then needs to extract frames from VidOR videos using `$ROOT/slowfast/dataset/vidor/extract_vidor_frames.sh`.
 
 ## Experiments
-For checking each model's final performance including mAP, use `$ROOT/vidor_eval.ipynb`.
+For checking each model's final performance including mAP, use `$ROOT/vidor_eval.ipynb`. The following commands use ground truth `GT` (Oracle mode) by default. To use detected trajectories, refer to `NONGT` version of each model.
 
-### Image Baseline
+### Image Baseline (2D Model)
 - Training: Run 
 ```
 python tools/run_net_vidor.py --cfg configs/vidor/BASELINE_32x2_R50_SHORT_SCRATCH_EVAL_GT.yaml DATA.PATH_TO_DATA_DIR slowfast/datasets/vidor NUM_GPUS 1 DATA_LOADER.NUM_WORKERS 0 TRAIN.BATCH_SIZE 128 TEST.BATCH_SIZE 1 LOG_MODEL_INFO False
@@ -28,12 +31,9 @@ python tools/run_net_vidor.py --cfg configs/vidor/BASELINE_32x2_R50_SHORT_SCRATC
 ```
 python tools/run_net_vidor.py --cfg configs/vidor/BASELINE_32x2_R50_SHORT_SCRATCH_EVAL_GT.yaml DATA.PATH_TO_DATA_DIR slowfast/datasets/vidor NUM_GPUS 1 DATA_LOADER.NUM_WORKERS 0 TEST.BATCH_SIZE 1 LOG_MODEL_INFO False TRAIN.ENABLE False TEST.CHECKPOINT_FILE_PATH ./output/BASELINE_32x2_R50_SHORT_SCRATCH_EVAL_GT/checkpoints/checkpoint_epoch_00020.pyth TRAIN.CHECKPOINT_TYPE pytorch VIDOR.TEST_DEBUG False
 ```
-- Results: 
-| mAP     | Max Recall | H/D      | D/T      | 1DR      |
-| ------- | ---------- | -------- | -------- | -------- |
-| 0.22837 | 0.47602    | 0.130475 | 0.101115 | 0.996039 |
+- NON-GT version: `BASELINE_32x2_R50_SHORT_SCRATCH_EVAL_NONGT`
 
-### Video Baseline
+### Video Baseline (3D Model)
 - Training: Run 
 ```
 python tools/run_net_vidor.py --cfg configs/vidor/SLOWFAST_32x2_R50_SHORT_SCRATCH_EVAL_GT.yaml DATA.PATH_TO_DATA_DIR slowfast/datasets/vidor NUM_GPUS 8 DATA_LOADER.NUM_WORKERS 0 TRAIN.BATCH_SIZE 128 TEST.BATCH_SIZE 1 LOG_MODEL_INFO False
@@ -42,12 +42,9 @@ python tools/run_net_vidor.py --cfg configs/vidor/SLOWFAST_32x2_R50_SHORT_SCRATC
 ```
 python tools/run_net_vidor.py --cfg configs/vidor/SLOWFAST_32x2_R50_SHORT_SCRATCH_EVAL_GT.yaml DATA.PATH_TO_DATA_DIR slowfast/datasets/vidor NUM_GPUS 1 DATA_LOADER.NUM_WORKERS 0 TEST.BATCH_SIZE 1 LOG_MODEL_INFO False TRAIN.ENABLE False TEST.CHECKPOINT_FILE_PATH ./output/SLOWFAST_32x2_R50_SHORT_SCRATCH_EVAL_GT/checkpoints/checkpoint_epoch_00020.pyth TRAIN.CHECKPOINT_TYPE pytorch VIDOR.TEST_DEBUG False
 ```
-- Results: 
-| mAP     | Max Recall | H/D      | D/T      | 1DR      |
-| ------- | ---------- | -------- | -------- | -------- |
-| 0.22890 | 0.47630    | 0.128148 | 0.101219 | 0.996039 |
+- NON-GT version: `SLOWFAST_32x2_R50_SHORT_SCRATCH_EVAL_NONGT`
 
-### Video Baseline + Trajectory
+### 3D + Trajectory (Ours-T)
 - Training: Run 
 ```
 python tools/run_net_vidor.py --cfg configs/vidor/SLOWFAST_32x2_R50_SHORT_SCRATCH_EVAL_GT_trajectory.yaml DATA.PATH_TO_DATA_DIR slowfast/datasets/vidor NUM_GPUS 8 DATA_LOADER.NUM_WORKERS 0 TRAIN.BATCH_SIZE 128 TEST.BATCH_SIZE 1 LOG_MODEL_INFO False VIDOR.TEST_DEBUG False
@@ -56,12 +53,9 @@ python tools/run_net_vidor.py --cfg configs/vidor/SLOWFAST_32x2_R50_SHORT_SCRATC
 ```
 python tools/run_net_vidor.py --cfg configs/vidor/SLOWFAST_32x2_R50_SHORT_SCRATCH_EVAL_GT_trajectory.yaml DATA.PATH_TO_DATA_DIR slowfast/datasets/vidor NUM_GPUS 1 DATA_LOADER.NUM_WORKERS 0 TEST.BATCH_SIZE 1 LOG_MODEL_INFO False TRAIN.ENABLE False TEST.CHECKPOINT_FILE_PATH ./output/SLOWFAST_32x2_R50_SHORT_SCRATCH_EVAL_GT_trajectory/checkpoints/checkpoint_epoch_00020.pyth TRAIN.CHECKPOINT_TYPE pytorch VIDOR.TEST_DEBUG False
 ```
-- Results: 
-| mAP     | Max Recall | H/D      | D/T      | 1DR      |
-| ------- | ---------- | -------- | -------- | -------- |
-| 0.26735 | 0.48236    | 0.131409 | 0.101223 | 0.996039 |
+- NON-GT version: `SLOWFAST_32x2_R50_SHORT_SCRATCH_EVAL_NONGT_trajectory`
 
-### Video Baseline + Trajectory + ToI-Pooled Features
+### 3D + Trajectory + ToI Features (Ours-T+V)
 - Training: Run 
 ```
 python tools/run_net_vidor.py --cfg configs/vidor/SLOWFAST_32x2_R50_SHORT_SCRATCH_EVAL_GT_trajectory-toipool.yaml DATA.PATH_TO_DATA_DIR slowfast/datasets/vidor NUM_GPUS 8 DATA_LOADER.NUM_WORKERS 0 TRAIN.BATCH_SIZE 128 TEST.BATCH_SIZE 1 LOG_MODEL_INFO False VIDOR.TEST_DEBUG False
@@ -70,12 +64,35 @@ python tools/run_net_vidor.py --cfg configs/vidor/SLOWFAST_32x2_R50_SHORT_SCRATC
 ```
 python tools/run_net_vidor.py --cfg configs/vidor/SLOWFAST_32x2_R50_SHORT_SCRATCH_EVAL_GT_trajectory-toipool.yaml DATA.PATH_TO_DATA_DIR slowfast/datasets/vidor NUM_GPUS 1 DATA_LOADER.NUM_WORKERS 0 TEST.BATCH_SIZE 1 LOG_MODEL_INFO False TRAIN.ENABLE False TEST.CHECKPOINT_FILE_PATH ./output/SLOWFAST_32x2_R50_SHORT_SCRATCH_EVAL_GT_trajectory-toipool/checkpoints/checkpoint_epoch_00020.pyth TRAIN.CHECKPOINT_TYPE pytorch VIDOR.TEST_DEBUG False
 ```
-- Results: 
-| mAP    | Max Recall | H/D      | D/T      | 1DR      |
-| ------ | ---------- | -------- | -------- | -------- |
-| 0.2678 | 0.48100    | 0.131618 | 0.101352 | 0.996039 |
+- NON-GT version: `SLOWFAST_32x2_R50_SHORT_SCRATCH_EVAL_NONGT_trajectory-toipool`
 
-### Video baseline + Trajectory + Human Poses (from VIBE)
+### 3D + Trajectory + Masking Pose Feature (Ours-T+P)
+- Training: Run 
+```
+python tools/run_net_vidor.py --cfg configs/vidor/SLOWFAST_32x2_R50_SHORT_SCRATCH_EVAL_GT_trajectory-spa_conf.yaml DATA.PATH_TO_DATA_DIR slowfast/datasets/vidor NUM_GPUS 8 DATA_LOADER.NUM_WORKERS 0 TRAIN.BATCH_SIZE 96 TEST.BATCH_SIZE 1 LOG_MODEL_INFO False VIDOR.TEST_DEBUG False
+```
+- Validation: Run 
+```
+python tools/run_net_vidor.py --cfg configs/vidor/SLOWFAST_32x2_R50_SHORT_SCRATCH_EVAL_GT_trajectory-spa_conf.yaml DATA.PATH_TO_DATA_DIR slowfast/datasets/vidor NUM_GPUS 1 DATA_LOADER.NUM_WORKERS 0 TEST.BATCH_SIZE 1 LOG_MODEL_INFO False TRAIN.ENABLE False TEST.CHECKPOINT_FILE_PATH ./output/SLOWFAST_32x2_R50_SHORT_SCRATCH_EVAL_GT_trajectory-spa_conf/checkpoints/checkpoint_epoch_00020.pyth TRAIN.CHECKPOINT_TYPE pytorch VIDOR.TEST_DEBUG False
+```
+- NON-GT version: `SLOWFAST_32x2_R50_SHORT_SCRATCH_EVAL_NONGT_trajectory-spa_conf`
+
+### 3D + Trajectory + ToI Features + Masking Pose Feature (Ours-T+V+P)
+Note that batch size is 112 for the this model.
+- Training: Run 
+```
+python tools/run_net_vidor.py --cfg configs/vidor/SLOWFAST_32x2_R50_SHORT_SCRATCH_EVAL_GT_trajectory-toipool-spa_conf.yaml DATA.PATH_TO_DATA_DIR slowfast/datasets/vidor NUM_GPUS 7 DATA_LOADER.NUM_WORKERS 0 TRAIN.BATCH_SIZE 112 TEST.BATCH_SIZE 1 LOG_MODEL_INFO False VIDOR.TEST_DEBUG False
+```
+- Validation: Run 
+```
+python tools/run_net_vidor.py --cfg configs/vidor/SLOWFAST_32x2_R50_SHORT_SCRATCH_EVAL_GT_trajectory-toipool-spa_conf.yaml DATA.PATH_TO_DATA_DIR slowfast/datasets/vidor NUM_GPUS 1 DATA_LOADER.NUM_WORKERS 0 TEST.BATCH_SIZE 1 LOG_MODEL_INFO False TRAIN.ENABLE False TEST.CHECKPOINT_FILE_PATH ./output/SLOWFAST_32x2_R50_SHORT_SCRATCH_EVAL_GT_trajectory-toipool-spa_conf/checkpoints/checkpoint_epoch_00020.pyth TRAIN.CHECKPOINT_TYPE pytorch VIDOR.TEST_DEBUG False
+```
+- NON-GT version: `SLOWFAST_32x2_R50_SHORT_SCRATCH_EVAL_NONGT_trajectory-toipool-spa_conf`
+
+
+## Optional Experiments
+
+### 3D + Trajectory + Human Poses (from VIBE)
 #### [Pre-requisite]
 Run VIBE with the following commands at `~/VIBE` to generate human poses for VidOR dataset and move the generated pose to the vidor dataset folder:
 - `python demo_vidor.py --output_folder output/ --gt_tracklet --mode training`
@@ -90,10 +107,6 @@ python tools/run_net_vidor.py --cfg configs/vidor/SLOWFAST_32x2_R50_SHORT_SCRATC
 ```
 python tools/run_net_vidor.py --cfg configs/vidor/SLOWFAST_32x2_R50_SHORT_SCRATCH_EVAL_GT_trajectory-human_pose.yaml DATA.PATH_TO_DATA_DIR slowfast/datasets/vidor NUM_GPUS 1 DATA_LOADER.NUM_WORKERS 0 TEST.BATCH_SIZE 1 LOG_MODEL_INFO False TRAIN.ENABLE False TEST.CHECKPOINT_FILE_PATH ./output/SLOWFAST_32x2_R50_SHORT_SCRATCH_EVAL_GT_trajectory-human_pose/checkpoints/checkpoint_epoch_00020.pyth TRAIN.CHECKPOINT_TYPE pytorch VIDOR.TEST_DEBUG False
 ```
-- Results: 
-| mAP     | Max Recall | H/D      | D/T      | 1DR      |
-| ------- | ---------- | -------- | -------- | -------- |
-| 0.25144 | 0.47396    | 0.129907 | 0.101724 | 0.996039 |
 
 ### Video baseline + Trajectory + Relativity Feature
 - Training: Run 
@@ -104,12 +117,8 @@ python tools/run_net_vidor.py --cfg configs/vidor/SLOWFAST_32x2_R50_SHORT_SCRATC
 ```
 python tools/run_net_vidor.py --cfg configs/vidor/SLOWFAST_32x2_R50_SHORT_SCRATCH_EVAL_GT_relativity-feat.yaml DATA.PATH_TO_DATA_DIR slowfast/datasets/vidor NUM_GPUS 1 DATA_LOADER.NUM_WORKERS 0 TEST.BATCH_SIZE 1 LOG_MODEL_INFO False TRAIN.ENABLE False TEST.CHECKPOINT_FILE_PATH ./output/SLOWFAST_32x2_R50_SHORT_SCRATCH_EVAL_GT_relativity-feat/checkpoints/checkpoint_epoch_00020.pyth TRAIN.CHECKPOINT_TYPE pytorch VIDOR.TEST_DEBUG False
 ```
-- Results: 
-| mAP     | Max Recall | H/D      | D/T      | 1DR      |
-| ------- | ---------- | -------- | -------- | -------- |
-| 0.26137 | 0.48231    | 0.129850 | 0.101884 | 0.996039 |
 
-## Human Poses Inference from HRNet (on-going)
+## Human Poses Inference from HRNet
 ```
 # Clone the HRNet repo first
 git clone https://github.com/leoxiaobin/deep-high-resolution-net.pytorch.git
