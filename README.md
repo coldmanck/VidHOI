@@ -174,4 +174,4 @@ Replace `training` to `validation` for generating human poses for val split.
 This codebase is largely based on [SlowFast](https://github.com/facebookresearch/SlowFast) and partially based the following repos:
 - [AlphaPose](https://github.com/MVIG-SJTU/AlphaPose)
 - [zero_shot_hoi](https://github.com/scwangdyd/zero_shot_hoi)
-- [PMFNet] (https://github.com/bobwan1995/PMFNet)
+- [PMFNet](https://github.com/bobwan1995/PMFNet)
