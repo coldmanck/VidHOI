@@ -15,7 +15,7 @@ pip install -r requirements.txt
 ```
 
 ## Dataset
-VidOR dataset is used. One may download the dataset and the original annotation at [the official website](https://xdshang.github.io/docs/vidor.html) and unzip to `$ROOT/slowfast/dataset/vidor`. For HOI-specific annotations, refer to files under the same folder, and for larger files, download from [here](https://drive.google.com/drive/folders/1PGZ-5vGXphL5dgUWrlePZn5lQ2ejq62K?usp=sharing).
+VidHOI (sampled and transformed from VidOR) is used. Download the dataset and the original annotation at [the official website](https://xdshang.github.io/docs/vidor.html) and unzip to `$ROOT/slowfast/dataset/vidor`. For HOI-specific annotations, refer to files under the same folder, and for larger files, download from [here](https://drive.google.com/drive/folders/1PGZ-5vGXphL5dgUWrlePZn5lQ2ejq62K?usp=sharing) and unzip them to the same folder.
 
 One then needs to extract frames from VidOR videos using `$ROOT/slowfast/dataset/vidor/extract_vidor_frames.sh`.
 
@@ -92,6 +92,32 @@ python tools/run_net_vidor.py --cfg configs/vidor/SLOWFAST_32x2_R50_SHORT_SCRATC
 
 ## Optional Experiments
 
+### Generating Human Poses
+FastPose from AlphaPose is used. One may choose to 
+- clone [this repository](https://github.com/coldmanck/AlphaPose), download the pretrained 2D human pose estimation model (esp. `fast_res50_256x192.pth`) and put into `pretrained_models` and run the following commands; or
+- Download AlphaPose.zip from [google drive](https://drive.google.com/file/d/1R71xJhJw_VnYNJQJJ2KwU7Wehb1Th1it/view?usp=sharing) and unzip it.
+
+- Demo:
+```
+./scripts/inference.sh configs/coco/resnet/256x192_res50_lr1e-3_1x.yaml pretrained_models/fast_res50_256x192.pth ~/datasets/vidor/video/0001/4164158586.mp4 results
+```
+or
+```
+python scripts/demo_inference.py --cfg configs/coco/resnet/256x192_res50_lr1e-3_1x.yaml --checkpoint pretrained_models/fast_res50_256x192.pth --video ~/datasets/vidor/video/0001/4164158586.mp4 --outdir results --detector yolo --save_video
+```
+
+- Inference
+```
+python scripts/demo_inference_vidor.py --cfg configs/coco/resnet/256x192_res50_lr1e-3_1x.yaml --checkpoint pretrained_models/fast_res50_256x192.pth --outdir results_gt --detector yolo --split training --gpus 0,1,2,3,4,5,6,7 --qsize 40960 --posebatch 1280
+```
+Note that one can change `--split` from training to validation.
+
+- Multi-gpu "distributed" inference
+```
+python scripts/demo_inference_vidor.py --cfg configs/coco/resnet/256x192_res50_lr1e-3_1x.yaml --checkpoint pretrained_models/fast_res50_256x192.pth --outdir results_gt --detector yolo --split validation --gpus 7 --qsize 40960 --posebatch 1280 --start_folder_idx 0 --end_folder_idx 29
+```
+
+
 ### 3D + Trajectory + Human Poses (from VIBE)
 #### [Pre-requisite]
 Run VIBE with the following commands at `~/VIBE` to generate human poses for VidOR dataset and move the generated pose to the vidor dataset folder:
@@ -143,3 +169,9 @@ python inference_sticks_vidor_demo.py --cfg inference-config_w48.yaml --writeBox
 python tools/inference_vidor.py --cfg experiments/vidor/hrnet/w48_384x288_adam_lr1e-3.yaml DATASET.SPLIT training
 ```
 Replace `training` to `validation` for generating human poses for val split.
+
+# Credit
+This codebase is largely based on [SlowFast](https://github.com/facebookresearch/SlowFast) and partially based the following repos:
+- [AlphaPose](https://github.com/MVIG-SJTU/AlphaPose)
+- [zero_shot_hoi](https://github.com/scwangdyd/zero_shot_hoi)
+- [PMFNet] (https://github.com/bobwan1995/PMFNet)
