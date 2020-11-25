@@ -19,14 +19,16 @@ pip install -r requirements.txt
 ```
 
 ## Dataset
-VidHOI (sampled and transformed from VidOR) is used. Download the dataset and the original annotation at [the official website](https://xdshang.github.io/docs/vidor.html) and unzip to `$ROOT/slowfast/dataset/vidor`. For HOI-specific annotations, refer to files under the same folder, and for larger files, download from [here](https://drive.google.com/drive/folders/1PGZ-5vGXphL5dgUWrlePZn5lQ2ejq62K?usp=sharing) (excluding `checkpoint.zip` and optional `AlphaPose.zip` file) and unzip them to the same folder.
+VidHOI (sampled and transformed from VidOR) is used. Download the dataset and the original annotation at [the official website](https://xdshang.github.io/docs/vidor.html) and unzip to `$ROOT/slowfast/dataset/vidor-github`. For HOI-specific annotations, refer to files under the same folder, and for larger files, download from [here](https://drive.google.com/drive/folders/1PGZ-5vGXphL5dgUWrlePZn5lQ2ejq62K?usp=sharing) (excluding `checkpoint.zip` and optional `AlphaPose.zip` file) and unzip them to the same folder.
 
-One then needs to extract frames from VidOR videos using `$ROOT/slowfast/dataset/vidor/extract_vidor_frames.sh`.
+One then needs to extract frames from VidOR videos using `$ROOT/slowfast/dataset/vidor-github/extract_vidor_frames.sh`.
 
 ## Checkpoints
 Trained models are provided for performance verification purpose without running training, and only 1 GPU is used during validation. Download the checkpoints from [here](https://drive.google.com/file/d/1p848ph27tOH1ODXPfIoLv59piMCexlfr/view?usp=sharing) and extract them under `$ROOT/checkpoints/`.
 
 ## Experiments
+First, rename the folder `vidor-github` under `$ROOT/slowfast/dataset` to `vidor` before running any command.
+
 For checking each model's final performance including mAP, use `$ROOT/vidor_eval.ipynb`. The following commands use ground truth `GT` (Oracle mode) by default. To use detected trajectories, refer to `NONGT` version of each model.
 
 ### Image Baseline (2D Model)
