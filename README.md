@@ -15,7 +15,7 @@ pip install -r requirements.txt
 ```
 
 ## Dataset
-VidHOI (sampled and transformed from VidOR) is used. Download the dataset and the original annotation at [the official website](https://xdshang.github.io/docs/vidor.html) and unzip to `$ROOT/slowfast/dataset/vidor`. For HOI-specific annotations, refer to files under the same folder, and for larger files, download from [here](https://drive.google.com/drive/folders/1PGZ-5vGXphL5dgUWrlePZn5lQ2ejq62K?usp=sharing) and unzip them to the same folder.
+VidHOI (sampled and transformed from VidOR) is used. Download the dataset and the original annotation at [the official website](https://xdshang.github.io/docs/vidor.html) and unzip to `$ROOT/slowfast/dataset/vidor`. For HOI-specific annotations, refer to files under the same folder, and for larger files, download from [here](https://drive.google.com/drive/folders/1PGZ-5vGXphL5dgUWrlePZn5lQ2ejq62K?usp=sharing) (excluding the optional `AlphaPose.zip` file) and unzip them to the same folder.
 
 One then needs to extract frames from VidOR videos using `$ROOT/slowfast/dataset/vidor/extract_vidor_frames.sh`.
 
@@ -97,6 +97,7 @@ FastPose from AlphaPose is used. One may choose to
 - clone [this repository](https://github.com/coldmanck/AlphaPose), download the pretrained 2D human pose estimation model (esp. `fast_res50_256x192.pth`) and put into `pretrained_models` and run the following commands; or
 - Download AlphaPose.zip from [google drive](https://drive.google.com/file/d/1R71xJhJw_VnYNJQJJ2KwU7Wehb1Th1it/view?usp=sharing) and unzip it.
 
+Then run the following:
 - Demo:
 ```
 ./scripts/inference.sh configs/coco/resnet/256x192_res50_lr1e-3_1x.yaml pretrained_models/fast_res50_256x192.pth ~/datasets/vidor/video/0001/4164158586.mp4 results
