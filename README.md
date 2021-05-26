@@ -19,7 +19,7 @@ pip install -r requirements.txt
 ```
 
 ## Dataset
-VidHOI (sampled and transformed from VidOR) is used. Download the dataset and the original annotation at [the official website](https://xdshang.github.io/docs/vidor.html) and unzip to `$ROOT/slowfast/dataset/vidor-github`. For HOI-specific annotations, refer to files under the same folder, and for larger files, download from [here](https://drive.google.com/drive/folders/1PGZ-5vGXphL5dgUWrlePZn5lQ2ejq62K?usp=sharing) (excluding `checkpoint.zip` and optional `AlphaPose.zip` file) and unzip them to the same folder.
+VidHOI (sampled and transformed from VidOR) is used. Download the dataset and the original annotation at [the official website](https://xdshang.github.io/docs/vidor.html) and unzip to `$ROOT/slowfast/dataset/vidor-github`. For HOI-specific annotations, refer to files under the same folder, and for larger files, download from [here](https://drive.google.com/drive/folders/1PGZ-5vGXphL5dgUWrlePZn5lQ2ejq62K?usp=sharing) (excluding the following files that are for the proposed ST-HOI baseline: `checkpoint.zip`, `vidor_{training/validation}_3d_human_poses_from_VIBE.pkl`, `human_poses_detected-bboxes.zip`, `human_poses.zip` and optional `AlphaPose.zip` file) and unzip them to the same folder.
 
 One then needs to extract frames from VidOR videos using `$ROOT/slowfast/dataset/vidor-github/extract_vidor_frames.sh`.
 
@@ -126,8 +126,8 @@ Note that one can change `--split` from training to validation.
 ```
 python scripts/demo_inference_vidor.py --cfg configs/coco/resnet/256x192_res50_lr1e-3_1x.yaml --checkpoint pretrained_models/fast_res50_256x192.pth --outdir results_gt --detector yolo --split validation --gpus 7 --qsize 40960 --posebatch 1280 --start_folder_idx 0 --end_folder_idx 29
 ```
-
-
+---
+\*\***The experiments below are not included in the main paper and only serve as record purpose.**\*\*
 ### 3D + Trajectory + Human Poses (from VIBE)
 #### [Pre-requisite]
 Run VIBE with the following commands at `~/VIBE` to generate human poses for VidOR dataset and move the generated pose to the vidor dataset folder:
