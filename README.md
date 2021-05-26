@@ -1,4 +1,4 @@
-# ST-HOI Baselines & VidHOI Benchmark (ICDAR in ACM ICMR'21)
+# ST-HOI Baselines & VidHOI Benchmark
 
 This repo includes models and experiment codes of "[**ST-HOI**: A **S**patial-**T**emporal Baseline for **H**uman **O**bject **I**nteraction in Videos](https://arxiv.org/pdf/2105.11731.pdf)" accepted at *[The 2nd Workshop on Intelligent Cross-Data Analysis and Retrieval (ICDAR)](https://www2.nict.go.jp/bidal/icdar_icmr2021/index.html)* in [ACM ICMR 2021](http://icmr2021.org/)..
 
