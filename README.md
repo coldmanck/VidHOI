@@ -1,8 +1,8 @@
 # ST-HOI Baselines & VidHOI Benchmark (ICDAR in ACM ICMR'21)
 
-This repo includes models and experiment codes of "**ST-HOI**: A **S**patial-**T**emporal Baseline for **H**uman **O**bject **I**nteraction in Videos" accepted at *[The 2nd Workshop on Intelligent Cross-Data Analysis and Retrieval (ICDAR)](https://www2.nict.go.jp/bidal/icdar_icmr2021/index.html)* in [ACM ICMR 2021](http://icmr2021.org/). The paper is coming soon.
+This repo includes models and experiment codes of "[**ST-HOI**: A **S**patial-**T**emporal Baseline for **H**uman **O**bject **I**nteraction in Videos](https://arxiv.org/pdf/2105.11731.pdf)" accepted at *[The 2nd Workshop on Intelligent Cross-Data Analysis and Retrieval (ICDAR)](https://www2.nict.go.jp/bidal/icdar_icmr2021/index.html)* in [ACM ICMR 2021](http://icmr2021.org/)..
 
-![Motivation](motivation.jpg)
+<img src="motivation.jpg" width="600">
 
 Note that each experiment was performed with eight NVIDIA Tesla V100 GPU with 32G memory. Before running the training commands ensure that your GPUs have enough memories. Otherwise, you might need to reduce the batch size accordingly. In contrast, only 1 GPU with less than 4GB GPU is used for validation commands as we evaluate with batch size of 1. 
 
