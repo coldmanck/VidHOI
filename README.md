@@ -2,7 +2,7 @@
 
 This repo includes models, experiment codes and the proposed VidHOI benchmark of "[**ST-HOI**: A **S**patial-**T**emporal Baseline for **H**uman **O**bject **I**nteraction Detection in Videos](https://arxiv.org/pdf/2105.11731.pdf)" accepted at *[The 2nd Workshop on Intelligent Cross-Data Analysis and Retrieval (ICDAR)](https://www2.nict.go.jp/bidal/icdar_icmr2021/index.html)* in [ACM ICMR 2021](http://icmr2021.org/).
 
-<img src="motivation.jpg" width="600">
+<img src="figs/motivation.jpg" width="600">
 
 Note that each experiment was performed with eight NVIDIA Tesla V100 GPU with 32G memory. Before running the training commands ensure that your GPUs have enough memories. Otherwise, you might need to reduce the batch size accordingly. In contrast, only 1 GPU with less than 4GB GPU is used for validation commands as we evaluate with batch size of 1. 
 
@@ -18,10 +18,16 @@ pip install -r requirements.txt
 # Then refer to OLD_README.md to install SlowFast and detectron2.
 ```
 
-## The VidHOI Dataset
-VidHOI (sampled and transformed from VidOR) is used in our paper. Please refer to 
+## The VidHOI Benchmark
+VidHOI (sampled and transformed from VidOR) is used in our paper. 
 
-Download the dataset and the original annotation at [the official website](https://xdshang.github.io/docs/vidor.html) and unzip to `$ROOT/slowfast/dataset/vidor-github`. For HOI-specific annotations, refer to files under the same folder, and for larger files, download from [here](https://drive.google.com/drive/folders/1PGZ-5vGXphL5dgUWrlePZn5lQ2ejq62K?usp=sharing) (note that the following files are only required for the proposed ST-HOI baselines: `checkpoint.zip`, `vidor_{training/validation}_3d_human_poses_from_VIBE.pkl`, `human_poses_detected-bboxes.zip`, `human_poses.zip` and optional `AlphaPose.zip`) and unzip the files to the same folder.
+<img src="figs/VidHOI_comparison.png">
+
+<img src="figs/vidhoi_predicate_freq.jpg" width="800">
+
+Please refer to Section 4.1 of [our paper](https://arxiv.org/pdf/2105.11731.pdf) for more detail about the proposed benchmark.
+
+Download the original VidOR dataset and annotations from [the official website](https://xdshang.github.io/docs/vidor.html) and unzip to `$ROOT/slowfast/dataset/vidor-github`. For HOI-specific annotations, refer to files under the same folder, and for larger files, download from [here](https://drive.google.com/drive/folders/1PGZ-5vGXphL5dgUWrlePZn5lQ2ejq62K?usp=sharing) (note that the following files are only required for the proposed ST-HOI baselines: `checkpoint.zip`, `vidor_{training/validation}_3d_human_poses_from_VIBE.pkl`, `human_poses_detected-bboxes.zip`, `human_poses.zip` and optional `AlphaPose.zip`) and unzip the files to the same folder.
 
 One then needs to extract frames from VidOR videos using `$ROOT/slowfast/dataset/vidor-github/extract_vidor_frames.sh`.
 
