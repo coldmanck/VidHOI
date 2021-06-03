@@ -18,7 +18,7 @@ pip install -r requirements.txt
 # Then refer to OLD_README.md to install SlowFast and detectron2.
 ```
 
-## The VidHOI Benchmark
+## Download VidHOI Benchmark
 VidHOI (sampled and transformed from VidOR) is used in our paper. 
 
 <img src="figs/VidHOI_comparison.png">
@@ -27,11 +27,38 @@ VidHOI (sampled and transformed from VidOR) is used in our paper.
 
 Please refer to Section 4.1 of [our paper](https://arxiv.org/pdf/2105.11731.pdf) for more detail about the proposed benchmark.
 
-Download the original VidOR dataset and annotations from [the official website](https://xdshang.github.io/docs/vidor.html) and unzip to `$ROOT/slowfast/dataset/vidor-github`. For HOI-specific annotations, refer to files under the same folder, and for larger files, download from [here](https://drive.google.com/drive/folders/1PGZ-5vGXphL5dgUWrlePZn5lQ2ejq62K?usp=sharing) (note that the following files are only required for the proposed ST-HOI baselines: `checkpoint.zip`, `vidor_{training/validation}_3d_human_poses_from_VIBE.pkl`, `human_poses_detected-bboxes.zip`, `human_poses.zip` and optional `AlphaPose.zip`) and unzip the files to the same folder.
+Download the original VidOR dataset and annotations from [the official website](https://xdshang.github.io/docs/vidor.html) and unzip to `$ROOT/slowfast/dataset/vidor-github`. For HOI-specific annotations, refer to files under the same folder, and for larger files, download from [here](https://drive.google.com/drive/folders/1PGZ-5vGXphL5dgUWrlePZn5lQ2ejq62K?usp=sharing) 
+
+### Files
+- Human/object bounding boxes
+  - `train_frame_annots.json`: Ground truth (training split)
+  - `val_frame_annots.json`: Ground truth (validation split)
+  - `det_val_frame_annots.json`: Detected (validation split)
+- Human/object trajectories
+  - `train_trajectories.json`: Ground truth (training split)
+  - `val_trajectories.json`: Ground truth (validation split)
+  - `det_val_trajectories.json`: Detected (validation split)
+- `detection_results.zip`: Raw detected boxes results (optional; not required for running)
+- `vidvrd-mff.zip`: the top-1 solution in [Relation Understanding in Videos ACM MM 2019 Grand Challenge](https://nextplusplus.github.io/VidVRD-helper/mm19-gdc/index.html) which includes the detected bounding boxes used in our project. This zip file is the same as the file [here](https://zdtnag7mmr.larksuite.com/file/boxusugavBW2RyKEE277UdPROyb).
 
 One then needs to extract frames from VidOR videos using `$ROOT/slowfast/dataset/vidor-github/extract_vidor_frames.sh`.
 
-## Checkpoints
+Note that for the *Detection* results in Table 2, we evaluate the models trained with ground truth boxes/trajectories, on detected boxes/trajectories.
+Therefore, we do not provide detected boxes/trajectories for training split.
+
+## Download ST-HOI Baselines
+### Files
+To reproduce results of ST-HOI baselines, please download essential files from [here](https://drive.google.com/drive/folders/1ONaZFOF5Kj0mxQZjl2F83vQxaz6jAQHE?usp=sharing) and unzip the files to the same folder (`vidor-github`) as above. 
+
+- Human poses
+  - `human_poses.zip`: generated human poses using ground truth boxes/trajectories
+  - `human_poses_detected-bboxes.zip`: generated human poses using detected boxes/trajectories
+  - `vidor_training_3d_human_poses_from_VIBE.pkl`: (Optional) 3D human poses generated with VIBE (training split)
+  - `vidor_validation_3d_human_poses_from_VIBE.pkl`: (Optional) 3D human poses generated with VIBE (validation split)
+
+### Checkpoints
+- `checkpoints.zip`: Final trained models' weights
+
 Trained models are provided for performance verification purpose without running training, and only 1 GPU is used during validation. Download the checkpoints from [here](https://drive.google.com/file/d/1p848ph27tOH1ODXPfIoLv59piMCexlfr/view?usp=sharing) and extract them under `$ROOT/checkpoints/`.
 
 ## Experiments
