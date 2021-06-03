@@ -56,9 +56,9 @@ To reproduce results of ST-HOI baselines, please download essential files from [
   - `vidor_validation_3d_human_poses_from_VIBE.pkl`: (Optional) 3D human poses generated with VIBE (validation split)
 
 ### Checkpoints
-- `checkpoints.zip`: Final trained models' weights
-
 Trained models are provided for performance verification purpose without running training, and only 1 GPU is used during validation. Download the checkpoints from [here](https://drive.google.com/file/d/1p848ph27tOH1ODXPfIoLv59piMCexlfr/view?usp=sharing) and extract them under `$ROOT/checkpoints/`.
+
+- `checkpoints.zip`: Final trained models' weights
 
 ## Experiments
 First, rename the folder `vidor-github` under `$ROOT/slowfast/dataset` to `vidor` before running any command.
