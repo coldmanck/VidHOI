@@ -39,12 +39,11 @@ Download the original VidOR dataset and annotations from [the official website](
   - `val_trajectories.json`: Ground truth (validation split)
   - `det_val_trajectories.json`: Detected (validation split)
 - `detection_results.zip`: Raw detected boxes results (optional; not required for running)
-- `vidvrd-mff.zip`: the top-1 solution in [Relation Understanding in Videos ACM MM 2019 Grand Challenge](https://nextplusplus.github.io/VidVRD-helper/mm19-gdc/index.html) which includes the detected bounding boxes used in our project. This zip file is the same as the file [here](https://zdtnag7mmr.larksuite.com/file/boxusugavBW2RyKEE277UdPROyb).
+- `vidvrd-mff.zip`: (Optional) the top-1 solution in [Relation Understanding in Videos ACM MM 2019 Grand Challenge](https://nextplusplus.github.io/VidVRD-helper/mm19-gdc/index.html) which includes the detected bounding boxes used in our project. This zip file is the same as the file [here](https://zdtnag7mmr.larksuite.com/file/boxusugavBW2RyKEE277UdPROyb).
 
 One then needs to extract frames from VidOR videos using `$ROOT/slowfast/dataset/vidor-github/extract_vidor_frames.sh`.
 
-Note that for the *Detection* results in Table 2, we evaluate the models trained with ground truth boxes/trajectories, on detected boxes/trajectories.
-Therefore, we do not provide detected boxes/trajectories for training split.
+Note that for the *Detection* results in Table 2, we evaluate the models trained with ground truth boxes/trajectories, on detected boxes/trajectories. That's why we do not provide detected boxes/trajectories for training split.
 
 ## Download ST-HOI Baselines
 ### Files
