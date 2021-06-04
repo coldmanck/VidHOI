@@ -27,10 +27,10 @@ VidHOI (sampled and transformed from VidOR) is used in our paper.
 
 Please refer to Section 4.1 of [our paper](https://arxiv.org/pdf/2105.11731.pdf) for more detail about the proposed benchmark.
 
-Download the original VidOR dataset and annotations from [the official website](https://xdshang.github.io/docs/vidor.html) and unzip to `$ROOT/slowfast/dataset/vidor-github`. For HOI-specific annotations, refer to files under the same folder, and for larger files, download from [here](https://drive.google.com/drive/folders/1PGZ-5vGXphL5dgUWrlePZn5lQ2ejq62K?usp=sharing) 
+First, download the original VidOR dataset and annotations from [the official website](https://xdshang.github.io/docs/vidor.html) and unzip to `$ROOT/slowfast/dataset/vidor-github`. To download VidHOI (i.e., HOI-specific) annotations, refer to files under the same folder in this repoistory, and for larger files, download them from [here](https://drive.google.com/drive/folders/1PGZ-5vGXphL5dgUWrlePZn5lQ2ejq62K?usp=sharing). 
 
 ### Files
-- Human/object bounding boxes
+- Human/object frame-wise annotations
   - `train_frame_annots.json`: Ground truth (training split)
   - `val_frame_annots.json`: Ground truth (validation split)
   - `det_val_frame_annots.json`: Detected (validation split)
@@ -39,7 +39,7 @@ Download the original VidOR dataset and annotations from [the official website](
   - `val_trajectories.json`: Ground truth (validation split)
   - `det_val_trajectories.json`: Detected (validation split)
 - `detection_results.zip`: Raw detected boxes results (optional; not required for running)
-- `vidvrd-mff.zip`: (Optional) the top-1 solution in [Relation Understanding in Videos ACM MM 2019 Grand Challenge](https://nextplusplus.github.io/VidVRD-helper/mm19-gdc/index.html) which includes the detected bounding boxes used in our project. This zip file is the same as the file [here](https://zdtnag7mmr.larksuite.com/file/boxusugavBW2RyKEE277UdPROyb).
+- `vidvrd-mff.zip`: (Optional) the top-1 solution in [Relation Understanding in Videos ACM MM 2019 Grand Challenge](https://nextplusplus.github.io/VidVRD-helper/mm19-gdc/index.html) which includes the detected human/object trajectories used in our project. This zip file is the same as the file [here](https://zdtnag7mmr.larksuite.com/file/boxusugavBW2RyKEE277UdPROyb).
 
 One then needs to extract frames from VidOR videos using `$ROOT/slowfast/dataset/vidor-github/extract_vidor_frames.sh`.
 
