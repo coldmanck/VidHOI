@@ -1,6 +1,6 @@
 # ST-HOI Baselines & VidHOI Benchmark
 
-Meng-Jiun Chiou, Chun-Yu Liao, Li-Wei Wang, Roger Zimmermann, Jiashi Feng<br>
+Meng-Jiun Chiou, Chun-Yu Liao, Li-Wei Wang, Roger Zimmermann and Jiashi Feng<br>
 "[**ST-HOI**: A **S**patial-**T**emporal Baseline for **H**uman-**O**bject **I**nteraction Detection in Videos](https://arxiv.org/pdf/2105.11731.pdf)"<br>
 In *[ACM ICMR 2021 Workshop on Intelligent Cross-Data Analysis and Retrieval](https://www2.nict.go.jp/bidal/icdar_icmr2021/index.html)*.
 
@@ -20,28 +20,21 @@ In *[ACM ICMR 2021 Workshop on Intelligent Cross-Data Analysis and Retrieval](ht
     <img src="figs/vidhoi_predicate_freq.jpg" width="800">
 </div>
 
-
-
-
 Note that each experiment was performed with eight NVIDIA Tesla V100 GPU with 32G memory. Before running the training commands ensure that your GPUs have enough memories. Otherwise, you might need to reduce the batch size accordingly. In contrast, only 1 GPU with less than 4GB GPU is used for validation commands as we evaluate with batch size of 1. 
 
 ## Installation
+1. Create a conda environment
 ```
 conda create -n slowfast python=3.6 scipy numpy
 conda activate slowfast
-# Install PyTorch 1.4.0 and torchvision 0.5.0 first
-pip install -r requirements.txt
-# Another way
-# conda create --name slowfast --file requirements.txt
-
-# Then refer to OLD_README.md to install SlowFast and detectron2.
 ```
+2. Install PyTorch 1.4.0 and torchvision 0.5.0 following [the official installation guide](https://pytorch.org/get-started/previous-versions/)
+3. Install other requirements via either
+    - `pip install -r requirements.txt`; or
+    - `conda create --name slowfast --file requirements.txt`
+4. Install SlowFast and detectron2 following the instructions in [OLD_README.md](OLD_README.md).
 
 ## Download VidHOI Benchmark
-VidHOI (sampled and transformed from VidOR) is used in our paper. 
-
-
-
 Please refer to Section 4.1 of [our paper](https://arxiv.org/pdf/2105.11731.pdf) for more detail about the proposed benchmark.
 
 First, download the original VidOR dataset and annotations from [the official website](https://xdshang.github.io/docs/vidor.html) and unzip to `$ROOT/slowfast/dataset/vidor-github`. To download VidHOI (i.e., HOI-specific) annotations, refer to files under the same folder in this repoistory, and for larger files, download them from [here](https://drive.google.com/drive/folders/1PGZ-5vGXphL5dgUWrlePZn5lQ2ejq62K?usp=sharing). 
