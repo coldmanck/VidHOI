@@ -1,8 +1,12 @@
 # ST-HOI Baselines & VidHOI Benchmark
 
-This repo includes models, experiment codes and the proposed VidHOI benchmark of "[**ST-HOI**: A **S**patial-**T**emporal Baseline for **H**uman-**O**bject **I**nteraction Detection in Videos](https://arxiv.org/pdf/2105.11731.pdf)" accepted at *[The 2nd Workshop on Intelligent Cross-Data Analysis and Retrieval (ICDAR)](https://www2.nict.go.jp/bidal/icdar_icmr2021/index.html)* in [ACM ICMR 2021](http://icmr2021.org/).
+ST-HOI is a strong, spatial-temporal-aware human-object interaction detection baseline. To take into account accurate spatial-temporal information, ST-HOI exploits trajectory-based features including correctly-localized visual features, spatial-temporal masking pose features and trajectory features.
 
-<img src="figs/motivation.jpg" width="600">
+This repo includes ST-HOI models, checkpoints and the proposed VidHOI benchmark introduced in "[**ST-HOI**: A **S**patial-**T**emporal Baseline for **H**uman-**O**bject **I**nteraction Detection in Videos](https://arxiv.org/pdf/2105.11731.pdf)" accepted at *[The 2nd Workshop on Intelligent Cross-Data Analysis and Retrieval (ICDAR)](https://www2.nict.go.jp/bidal/icdar_icmr2021/index.html)* in [ACM ICMR 2021](http://icmr2021.org/).
+
+<div align="center">
+    <img src="figs/motivation.jpg" width="500">
+</div>
 
 Note that each experiment was performed with eight NVIDIA Tesla V100 GPU with 32G memory. Before running the training commands ensure that your GPUs have enough memories. Otherwise, you might need to reduce the batch size accordingly. In contrast, only 1 GPU with less than 4GB GPU is used for validation commands as we evaluate with batch size of 1. 
 
@@ -21,9 +25,13 @@ pip install -r requirements.txt
 ## Download VidHOI Benchmark
 VidHOI (sampled and transformed from VidOR) is used in our paper. 
 
-<img src="figs/VidHOI_comparison.png">
+<div align="center">
+    <img src="figs/VidHOI_comparison.png">
+</div>
 
-<img src="figs/vidhoi_predicate_freq.jpg" width="800">
+<div align="center">
+    <img src="figs/vidhoi_predicate_freq.jpg" width="800">
+</div>
 
 Please refer to Section 4.1 of [our paper](https://arxiv.org/pdf/2105.11731.pdf) for more detail about the proposed benchmark.
 
@@ -213,6 +221,17 @@ python inference_sticks_vidor_demo.py --cfg inference-config_w48.yaml --writeBox
 python tools/inference_vidor.py --cfg experiments/vidor/hrnet/w48_384x288_adam_lr1e-3.yaml DATASET.SPLIT training
 ```
 Replace `training` to `validation` for generating human poses for val split.
+
+# Citation
+Please cite our paper if you find our proposed models and/or benchmark helpful for your work:
+```
+@article{chiou2021st,
+  title={ST-HOI: A Spatial-Temporal Baseline for Human-Object Interaction Detection in Videos},
+  author={Chiou, Meng-Jiun and Liao, Chun-Yu and Wang, Li-Wei and Zimmermann, Roger and Feng, Jiashi},
+  journal={arXiv preprint arXiv:2105.11731},
+  year={2021}
+}
+```
 
 # Credit
 This codebase is largely based on [SlowFast](https://github.com/facebookresearch/SlowFast) and partially based the following repos:
