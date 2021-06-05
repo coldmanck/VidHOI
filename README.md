@@ -40,30 +40,30 @@ Please refer to Section 4.1 of [our paper](https://arxiv.org/pdf/2105.11731.pdf)
 First, download the original VidOR dataset and annotations from [the official website](https://xdshang.github.io/docs/vidor.html) and unzip to `$ROOT/slowfast/dataset/vidor-github`. To download VidHOI (i.e., HOI-specific) annotations, refer to files under the same folder in this repoistory, and for larger files, download them from [here](https://drive.google.com/drive/folders/1PGZ-5vGXphL5dgUWrlePZn5lQ2ejq62K?usp=sharing). 
 
 ### Files
-- Human/object frame-wise annotations
-  - `train_frame_annots.json`: Ground truth (training split)
-  - `val_frame_annots.json`: Ground truth (validation split)
-  - `det_val_frame_annots.json`: Detected (validation split)
-- Human/object trajectories
-  - `train_trajectories.json`: Ground truth (training split)
-  - `val_trajectories.json`: Ground truth (validation split)
-  - `det_val_trajectories.json`: Detected (validation split)
-- `detection_results.zip`: Raw detected boxes results (optional; not required for running)
-- `vidvrd-mff.zip`: (Optional) the top-1 solution in [Relation Understanding in Videos ACM MM 2019 Grand Challenge](https://nextplusplus.github.io/VidVRD-helper/mm19-gdc/index.html) which includes the detected human/object trajectories used in our project. This zip file is the same as the file [here](https://zdtnag7mmr.larksuite.com/file/boxusugavBW2RyKEE277UdPROyb).
+- Human/object frame-wise annotations for training/validation
+  - `train_frame_annots.json` 
+  - `val_frame_annots.json`
+- Human/object trajectories for training/validation
+  - `train_trajectories.json`
+  - `val_trajectories.json`
 
 One then needs to extract frames from VidOR videos using `$ROOT/slowfast/dataset/vidor-github/extract_vidor_frames.sh`.
 
-Note that for the *Detection* results in Table 2, we evaluate the models trained with ground truth boxes/trajectories, on detected boxes/trajectories. That's why we do not provide detected boxes/trajectories for training split.
-
 ## Download ST-HOI Baselines
 ### Files
-To reproduce results of ST-HOI baselines, please download essential files from [here](https://drive.google.com/drive/folders/1ONaZFOF5Kj0mxQZjl2F83vQxaz6jAQHE?usp=sharing) and unzip the files to the same folder (`vidor-github`) as above. 
+To reproduce results of ST-HOI baselines, please download essential files from [here](https://drive.google.com/drive/folders/1ONaZFOF5Kj0mxQZjl2F83vQxaz6jAQHE?usp=sharing) and put (after unzipping, if applicable) the files to the same folder (`vidor-github`) as above. 
 
+- `det_val_trajectories.json`: detected trajectories (validation split)
+- `det_val_frame_annots.json`: detected frame-wise annotations (validation split)
 - Human poses
   - `human_poses.zip`: generated human poses using ground truth boxes/trajectories
   - `human_poses_detected-bboxes.zip`: generated human poses using detected boxes/trajectories
-  - `vidor_training_3d_human_poses_from_VIBE.pkl`: (Optional) 3D human poses generated with VIBE (training split)
-  - `vidor_validation_3d_human_poses_from_VIBE.pkl`: (Optional) 3D human poses generated with VIBE (validation split)
+  - `vidor_training_3d_human_poses_from_VIBE.pkl`: (optional) 3D human poses generated with VIBE (training split)
+  - `vidor_validation_3d_human_poses_from_VIBE.pkl`: (optional) 3D human poses generated with VIBE (validation split)
+- `detection_results.zip`: raw detected boxes results (optional as it's been transformed into `det_val_trajectories,json` and `det_val_frame_annots.json`)
+- `vidvrd-mff.zip`: (optional) the top-1 solution in [Relation Understanding in Videos ACM MM 2019 Grand Challenge](https://nextplusplus.github.io/VidVRD-helper/mm19-gdc/index.html) which includes the detected human/object trajectories used in our project. This zip file is the same as the file [here](https://zdtnag7mmr.larksuite.com/file/boxusugavBW2RyKEE277UdPROyb).
+
+Note that for the *Detection* results in Table 2, we evaluate the models trained with ground truth boxes/trajectories, on detected boxes/trajectories. That's why we do not provide detected boxes/trajectories for training split.
 
 ### Checkpoints
 Trained models are provided for performance verification purpose without running training, and only 1 GPU is used during validation. Download the checkpoints from [here](https://drive.google.com/file/d/1p848ph27tOH1ODXPfIoLv59piMCexlfr/view?usp=sharing) and extract them under `$ROOT/checkpoints/`.
