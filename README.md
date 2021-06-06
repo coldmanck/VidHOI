@@ -23,19 +23,17 @@ In *[ACM ICMR 2021 Workshop on Intelligent Cross-Data Analysis and Retrieval](ht
 Note that each experiment was performed with eight NVIDIA Tesla V100 GPU with 32G memory. Before running the training commands ensure that your GPUs have enough memories. Otherwise, you might need to reduce the batch size accordingly. In contrast, only 1 GPU with less than 4GB GPU is used for validation commands as we evaluate with batch size of 1. 
 
 ## To-dos
-- [ ] Automate evaluation process (instead of using `vidor_eval.ipynb`)
+- [ ] Automate evaluation process (instead of using [vidor_eval.ipynb](vidor_eval.ipynb))
 - [ ] Clean visualization tools
 
 ## Installation
 1. Create a conda environment
 ```
-conda create -n slowfast python=3.6 scipy numpy
-conda activate slowfast
+conda create -n vidhoi python=3.6 scipy numpy
+conda activate vidhoi
 ```
 2. Install PyTorch 1.4.0 and torchvision 0.5.0 following [the official installation guide](https://pytorch.org/get-started/previous-versions/)
-3. Install other requirements via either
-    - `pip install -r requirements.txt`; or
-    - `conda create --name slowfast --file requirements.txt`
+3. Install other requirements via `pip install -r requirements.txt`
 4. Install SlowFast and detectron2 following the instructions in [OLD_README.md](OLD_README.md).
 
 ## Download VidHOI Benchmark
@@ -75,9 +73,9 @@ Trained models are provided for performance verification purpose without running
 - `checkpoints.zip`: Final trained models' weights
 
 ## Experiments
-First, rename the folder `vidor-github` under `$ROOT/slowfast/dataset` to `vidor` before running any command.
+First, rename the folder `vidor-github` under `$ROOT/slowfast/dataset` to `vidor` before running any command. The following commands use ground truth `GT` (Oracle mode) by default. To use detected trajectories, refer to `NONGT` version of each model.
 
-For checking each model's final performance including mAP, use `$ROOT/vidor_eval.ipynb`. The following commands use ground truth `GT` (Oracle mode) by default. To use detected trajectories, refer to `NONGT` version of each model.
+For checking each model's final performance including mAP, use [vidor_eval.ipynb](vidor_eval.ipynb) (TODO: write an automatic evaluation script)
 
 ### Image Baseline (2D Model)
 - Training: Run 
