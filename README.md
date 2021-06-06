@@ -22,6 +22,10 @@ In *[ACM ICMR 2021 Workshop on Intelligent Cross-Data Analysis and Retrieval](ht
 
 Note that each experiment was performed with eight NVIDIA Tesla V100 GPU with 32G memory. Before running the training commands ensure that your GPUs have enough memories. Otherwise, you might need to reduce the batch size accordingly. In contrast, only 1 GPU with less than 4GB GPU is used for validation commands as we evaluate with batch size of 1. 
 
+## To-dos
+- [ ] Automate evaluation process (instead of using `vidor_eval.ipynb`)
+- [ ] Clean visualization tools
+
 ## Installation
 1. Create a conda environment
 ```
