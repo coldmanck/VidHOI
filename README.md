@@ -149,11 +149,11 @@ python tools/run_net_vidor.py --cfg configs/vidor/SLOWFAST_32x2_R50_SHORT_SCRATC
 
 ### Generating Human Poses
 FastPose from AlphaPose is used. One may choose to 
-- clone [this repository](https://github.com/coldmanck/AlphaPose), download the pretrained 2D human pose estimation model (esp. `fast_res50_256x192.pth`) and put into `pretrained_models` and run the following commands; or
-- Download AlphaPose.zip from [google drive](https://drive.google.com/file/d/1R71xJhJw_VnYNJQJJ2KwU7Wehb1Th1it/view?usp=sharing) and unzip it.
+- clone [this repository](https://github.com/coldmanck/AlphaPose) to a separate directory, download the pretrained 2D human pose estimation model (e.g., `fast_res50_256x192.pth`) and put into `pretrained_models`; or
+- Download AlphaPose.zip from [google drive](https://drive.google.com/file/d/1R71xJhJw_VnYNJQJJ2KwU7Wehb1Th1it/view?usp=sharing) and unzip it to a separate directory
 
-Then run the following:
-- Demo:
+Then install and activate a new environment for AlphaPose following [the installation guide](https://github.com/coldmanck/AlphaPose/blob/master/docs/INSTALL.md), followed by running the commands:
+- Demo some pictures:
 ```
 ./scripts/inference.sh configs/coco/resnet/256x192_res50_lr1e-3_1x.yaml pretrained_models/fast_res50_256x192.pth ~/datasets/vidor/video/0001/4164158586.mp4 results
 ```
