@@ -9,7 +9,7 @@ in *[ACM ICMR 2021 - Workshop on Intelligent Cross-Data Analysis and Retrieval](
 
 **ST-HOI** is a strong, spatial-temporal-aware human-object interaction (HOI) detection baseline. To take into account accurate spatial-temporal information, ST-HOI exploits trajectory-based features including correctly-localized visual features, spatial-temporal masking pose features and trajectory features.
 
-**VidHOI** is one the first large-scale *video-based* HOI detection benchmarks, which is sampled and transformed from an existing video dataset, [VidOR](https://xdshang.github.io/docs/vidor.html).
+**VidHOI** is one of the first large-scale *video-based* HOI detection benchmark. Note that in contrast to action detection datasets such as AVA/Kinetics, the interacting objects are explicitly annotated in VidHOI. We sampled and transformed video HOIs (*i.e.*, image HOIs in continuous frames) from an existing video dataset, [VidOR](https://xdshang.github.io/docs/vidor.html).
 
 <div align="center">
     <img src="figs/motivation.jpg" width="500">
