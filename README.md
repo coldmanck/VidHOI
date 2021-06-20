@@ -1,8 +1,11 @@
 # ST-HOI Baselines & VidHOI Benchmark
 
-Meng-Jiun Chiou, Chun-Yu Liao, Li-Wei Wang, Roger Zimmermann and Jiashi Feng<br>
-"[**ST-HOI**: A **S**patial-**T**emporal Baseline for **H**uman-**O**bject **I**nteraction Detection in Videos](https://arxiv.org/pdf/2105.11731.pdf)"<br>
-In *[ACM ICMR 2021 Workshop on Intelligent Cross-Data Analysis and Retrieval](https://www2.nict.go.jp/bidal/icdar_icmr2021/index.html)*.
+<div align="center">
+    
+[Meng-Jiun Chiou](http://coldmanck.github.io/), Chun-Yu Liao, Li-Wei Wang, [Roger Zimmermann](https://www.comp.nus.edu.sg/~rogerz/roger.html) and [Jiashi Feng](https://sites.google.com/site/jshfeng/home),<br>
+"[**ST-HOI**: A **S**patial-**T**emporal Baseline for **H**uman-**O**bject **I**nteraction Detection in Videos](https://arxiv.org/pdf/2105.11731.pdf),"<br>
+in *[ACM ICMR 2021 - Workshop on Intelligent Cross-Data Analysis and Retrieval](https://www2.nict.go.jp/bidal/icdar_icmr2021/index.html)*.
+</div>
 
 **ST-HOI** is a strong, spatial-temporal-aware human-object interaction (HOI) detection baseline. To take into account accurate spatial-temporal information, ST-HOI exploits trajectory-based features including correctly-localized visual features, spatial-temporal masking pose features and trajectory features.
 
