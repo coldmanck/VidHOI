@@ -1,4 +1,4 @@
-# Human-Object Interaction Detection in Videos (ST-HOI/VidHOI)
+# Human-Object Interaction in Videos (ST-HOI/VidHOI)
 
 <div align="center">
     
