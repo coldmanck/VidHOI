@@ -1,4 +1,4 @@
-# ST-HOI Baselines & VidHOI Benchmark
+# Human-Object Interaction Detection in Videos (ST-HOI/VidHOI)
 
 <div align="center">
     
