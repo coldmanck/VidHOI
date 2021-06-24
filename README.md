@@ -60,6 +60,7 @@ To reproduce results of ST-HOI baselines, please download essential files from [
 
 - `det_val_trajectories.json`: detected trajectories (validation split)
 - `det_val_frame_annots.json`: detected frame-wise annotations (validation split)
+- `val_instances_predictions_train_small_vidor_with_pseudo_labels.pth`: is only for "removing those testing frames with ground truth boxes that no any bounding box got predicted by the trajectory generation model", i.e. we evaluate only on those testing frames with at least one predicted boxes. This resulting in 168 less frames (22,967 -> 22,808).
 - Human poses
   - `human_poses.zip`: generated human poses using ground truth boxes/trajectories
   - `human_poses_detected-bboxes.zip`: generated human poses using detected boxes/trajectories
