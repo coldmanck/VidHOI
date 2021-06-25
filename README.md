@@ -67,6 +67,8 @@ to configs when starting a validation session.
 ### Files
 To reproduce results of ST-HOI baselines, please download essential files from [here](https://drive.google.com/drive/folders/1ONaZFOF5Kj0mxQZjl2F83vQxaz6jAQHE?usp=sharing) and put (after unzipping, if applicable) the files to the same folder (`vidor-github`) as above. 
 
+Note that if you'd only like to testing with ground truth trajectories, you only need to download `human_poses.zip`!
+
 - `det_val_trajectories.json`: detected trajectories (validation split)
 - `det_val_frame_annots.json`: detected frame-wise annotations (validation split)
 - Human poses
@@ -77,7 +79,7 @@ To reproduce results of ST-HOI baselines, please download essential files from [
 - `detection_results.zip`: raw detected boxes results (optional as it's been transformed into `det_val_trajectories,json` and `det_val_frame_annots.json`)
 - `vidvrd-mff.zip`: (optional) the top-1 solution in [Relation Understanding in Videos ACM MM 2019 Grand Challenge](https://nextplusplus.github.io/VidVRD-helper/mm19-gdc/index.html) which includes the detected human/object trajectories used in our project. This zip file is the same as the file [here](https://zdtnag7mmr.larksuite.com/file/boxusugavBW2RyKEE277UdPROyb).
 
-Note that for the *Detection* results in Table 2, we evaluate the models trained with ground truth boxes/trajectories, on detected boxes/trajectories. That's why we do not provide detected boxes/trajectories for training split.
+Note that for the *Detection* results in Table 2, we evaluate the models (trained with ground truth boxes/trajectories) on detected boxes/trajectories. That's why we only need detected boxes/trajectories for VidHOI validation split.
 
 ### Checkpoints
 Trained models are provided for performance verification purpose without running training, and only 1 GPU is used during validation. Download the checkpoints from [here](https://drive.google.com/file/d/1p848ph27tOH1ODXPfIoLv59piMCexlfr/view?usp=sharing) and extract them under `$ROOT/checkpoints/`.
