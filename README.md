@@ -69,7 +69,6 @@ To reproduce results of ST-HOI baselines, please download essential files from [
 
 - `det_val_trajectories.json`: detected trajectories (validation split)
 - `det_val_frame_annots.json`: detected frame-wise annotations (validation split)
-- : is only for "
 - Human poses
   - `human_poses.zip`: generated human poses using ground truth boxes/trajectories
   - `human_poses_detected-bboxes.zip`: generated human poses using detected boxes/trajectories
