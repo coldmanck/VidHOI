@@ -51,8 +51,12 @@ First, download the original VidOR dataset and annotations from [the official we
 - Human/object trajectories for training/validation
   - `train_trajectories.json`
   - `val_trajectories.json`
+- For removing testing frames with missing predicted boxes (during evaluation with precomputed boxes; details below)
+  - `val_instances_predictions_train_small_vidor_with_pseudo_labels.pth`
 
 One then needs to extract frames from VidOR videos using `$ROOT/slowfast/dataset/vidor-github/extract_vidor_frames.sh`.
+
+**[Important Note]** Since ST-HOI baselines with pre-computed predicted boxes (during validation) miss bounding boxes for some validation frames, to make them compatiable with the results that used ground truth boxes we remove those testing frames that *no any bounding box got predicted by the trajectory generation model*, i.e., we evaluate our all baselines only on those testing frames with at least one predicted boxes. This is done via replacing the default value of `VIDOR.TEST_PREDICT_BOX_LISTS` from `val_frame_annots.json` to `val_instances_predictions_train_small_vidor_with_pseudo_labels.pth`. This results in 168 less testing examples (22,967 -> 22,808 frames). To validate a model on all 22,808 frames, change the option back to `val_frame_annots.json`.
 
 ## Download ST-HOI Baselines
 ### Files
@@ -60,7 +64,7 @@ To reproduce results of ST-HOI baselines, please download essential files from [
 
 - `det_val_trajectories.json`: detected trajectories (validation split)
 - `det_val_frame_annots.json`: detected frame-wise annotations (validation split)
-- `val_instances_predictions_train_small_vidor_with_pseudo_labels.pth`: is only for "removing those testing frames with ground truth boxes that no any bounding box got predicted by the trajectory generation model", i.e. we evaluate only on those testing frames with at least one predicted boxes. This resulting in 168 less frames (22,967 -> 22,808).
+- : is only for "
 - Human poses
   - `human_poses.zip`: generated human poses using ground truth boxes/trajectories
   - `human_poses_detected-bboxes.zip`: generated human poses using detected boxes/trajectories
