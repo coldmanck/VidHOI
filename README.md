@@ -155,7 +155,10 @@ python tools/run_net_vidor.py --cfg configs/vidor/SLOWFAST_32x2_R50_SHORT_SCRATC
 
 ## Optional Experiments
 
-### Generating Human Poses
+<details>
+<summary>
+Generating Human Poses
+</summary>
 FastPose from AlphaPose is used. One may choose to 
 - clone [this repository](https://github.com/coldmanck/AlphaPose) to a separate directory, download the pretrained 2D human pose estimation model (e.g., `fast_res50_256x192.pth`) and put into `pretrained_models`; or
 - Download AlphaPose.zip from [google drive](https://drive.google.com/file/d/1R71xJhJw_VnYNJQJJ2KwU7Wehb1Th1it/view?usp=sharing) and unzip it to a separate directory
@@ -180,14 +183,23 @@ Note that one can change `--split` from training to validation.
 ```
 python scripts/demo_inference_vidor.py --cfg configs/coco/resnet/256x192_res50_lr1e-3_1x.yaml --checkpoint pretrained_models/fast_res50_256x192.pth --outdir results_gt --detector yolo --split validation --gpus 7 --qsize 40960 --posebatch 1280 --start_folder_idx 0 --end_folder_idx 29
 ```
+</details>
+    
 ---
+
 \*\***The experiments below are not included in the main paper and only serve as record purpose.**\*\*
-### 3D + Trajectory + Human Poses (from VIBE)
-#### [Pre-requisite]
+
+<details>
+<summary>
+3D + Trajectory + Human Poses (from VIBE)
+</summary>
+    
+### [Pre-requisite]
 Run VIBE with the following commands at `~/VIBE` to generate human poses for VidOR dataset and move the generated pose to the vidor dataset folder:
 - `python demo_vidor.py --output_folder output/ --gt_tracklet --mode training`
 - `python demo_vidor.py --output_folder output/ --gt_tracklet --mode validation`
 
+### Running
 Then run the following:
 - Training: Run 
 ```
@@ -197,8 +209,12 @@ python tools/run_net_vidor.py --cfg configs/vidor/SLOWFAST_32x2_R50_SHORT_SCRATC
 ```
 python tools/run_net_vidor.py --cfg configs/vidor/SLOWFAST_32x2_R50_SHORT_SCRATCH_EVAL_GT_trajectory-human_pose.yaml DATA.PATH_TO_DATA_DIR slowfast/datasets/vidor NUM_GPUS 1 DATA_LOADER.NUM_WORKERS 0 TEST.BATCH_SIZE 1 LOG_MODEL_INFO False TRAIN.ENABLE False TEST.CHECKPOINT_FILE_PATH ./output/SLOWFAST_32x2_R50_SHORT_SCRATCH_EVAL_GT_trajectory-human_pose/checkpoints/checkpoint_epoch_00020.pyth TRAIN.CHECKPOINT_TYPE pytorch VIDOR.TEST_DEBUG False
 ```
+</details>
 
-### Video baseline + Trajectory + Relativity Feature
+<details>
+<summary>
+Video baseline + Trajectory + Relativity Feature
+</summary>
 - Training: Run 
 ```
 python tools/run_net_vidor.py --cfg configs/vidor/SLOWFAST_32x2_R50_SHORT_SCRATCH_EVAL_GT_relativity-feat.yaml DATA.PATH_TO_DATA_DIR slowfast/datasets/vidor NUM_GPUS 8 DATA_LOADER.NUM_WORKERS 0 TRAIN.BATCH_SIZE 128 TEST.BATCH_SIZE 1 LOG_MODEL_INFO False VIDOR.TEST_DEBUG False
@@ -207,8 +223,13 @@ python tools/run_net_vidor.py --cfg configs/vidor/SLOWFAST_32x2_R50_SHORT_SCRATC
 ```
 python tools/run_net_vidor.py --cfg configs/vidor/SLOWFAST_32x2_R50_SHORT_SCRATCH_EVAL_GT_relativity-feat.yaml DATA.PATH_TO_DATA_DIR slowfast/datasets/vidor NUM_GPUS 1 DATA_LOADER.NUM_WORKERS 0 TEST.BATCH_SIZE 1 LOG_MODEL_INFO False TRAIN.ENABLE False TEST.CHECKPOINT_FILE_PATH ./output/SLOWFAST_32x2_R50_SHORT_SCRATCH_EVAL_GT_relativity-feat/checkpoints/checkpoint_epoch_00020.pyth TRAIN.CHECKPOINT_TYPE pytorch VIDOR.TEST_DEBUG False
 ```
+</details>
 
-## Human Poses Inference from HRNet
+<details>
+<summary>
+Human Poses Inference from HRNet
+</summary>
+
 ```
 # Clone the HRNet repo first
 git clone https://github.com/leoxiaobin/deep-high-resolution-net.pytorch.git
@@ -233,6 +254,7 @@ python inference_sticks_vidor_demo.py --cfg inference-config_w48.yaml --writeBox
 python tools/inference_vidor.py --cfg experiments/vidor/hrnet/w48_384x288_adam_lr1e-3.yaml DATASET.SPLIT training
 ```
 Replace `training` to `validation` for generating human poses for val split.
+</details>
 
 # Citation
 Please cite our paper if you find our proposed models and/or benchmark helpful for your work:
