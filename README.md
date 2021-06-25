@@ -185,8 +185,6 @@ Note that one can change `--split` from training to validation.
 python scripts/demo_inference_vidor.py --cfg configs/coco/resnet/256x192_res50_lr1e-3_1x.yaml --checkpoint pretrained_models/fast_res50_256x192.pth --outdir results_gt --detector yolo --split validation --gpus 7 --qsize 40960 --posebatch 1280 --start_folder_idx 0 --end_folder_idx 29
 ```
 </details>
-    
----
 
 \*\***The experiments below are not included in the main paper and only serve as record purpose.**\*\*
 
