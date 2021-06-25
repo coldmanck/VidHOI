@@ -159,8 +159,9 @@ python tools/run_net_vidor.py --cfg configs/vidor/SLOWFAST_32x2_R50_SHORT_SCRATC
 <summary>
 Generating Human Poses
 </summary>
-FastPose from AlphaPose is used. One may choose to 
-- clone [this repository](https://github.com/coldmanck/AlphaPose) to a separate directory, download the pretrained 2D human pose estimation model (e.g., `fast_res50_256x192.pth`) and put into `pretrained_models`; or
+
+FastPose from [AlphaPose](https://github.com/MVIG-SJTU/AlphaPose) is used. One may choose to 
+- clone [AlphaPose](https://github.com/coldmanck/AlphaPose) to a separate directory, download the pretrained 2D human pose estimation model (e.g., `fast_res50_256x192.pth`) and put into `pretrained_models`; or
 - Download AlphaPose.zip from [google drive](https://drive.google.com/file/d/1R71xJhJw_VnYNJQJJ2KwU7Wehb1Th1it/view?usp=sharing) and unzip it to a separate directory
 
 Then install and activate a new environment for AlphaPose following [the installation guide](https://github.com/coldmanck/AlphaPose/blob/master/docs/INSTALL.md), followed by running the commands:
@@ -215,11 +216,14 @@ python tools/run_net_vidor.py --cfg configs/vidor/SLOWFAST_32x2_R50_SHORT_SCRATC
 <summary>
 Video baseline + Trajectory + Relativity Feature
 </summary>
-- Training: Run 
+
+- Training: 
 ```
 python tools/run_net_vidor.py --cfg configs/vidor/SLOWFAST_32x2_R50_SHORT_SCRATCH_EVAL_GT_relativity-feat.yaml DATA.PATH_TO_DATA_DIR slowfast/datasets/vidor NUM_GPUS 8 DATA_LOADER.NUM_WORKERS 0 TRAIN.BATCH_SIZE 128 TEST.BATCH_SIZE 1 LOG_MODEL_INFO False VIDOR.TEST_DEBUG False
 ```
-- Validation: Run 
+    
+- Validation: 
+
 ```
 python tools/run_net_vidor.py --cfg configs/vidor/SLOWFAST_32x2_R50_SHORT_SCRATCH_EVAL_GT_relativity-feat.yaml DATA.PATH_TO_DATA_DIR slowfast/datasets/vidor NUM_GPUS 1 DATA_LOADER.NUM_WORKERS 0 TEST.BATCH_SIZE 1 LOG_MODEL_INFO False TRAIN.ENABLE False TEST.CHECKPOINT_FILE_PATH ./output/SLOWFAST_32x2_R50_SHORT_SCRATCH_EVAL_GT_relativity-feat/checkpoints/checkpoint_epoch_00020.pyth TRAIN.CHECKPOINT_TYPE pytorch VIDOR.TEST_DEBUG False
 ```
