@@ -2,19 +2,20 @@
 
 <div align="center">
     
-[Meng-Jiun Chiou](http://coldmanck.github.io/), Chun-Yu Liao, Li-Wei Wang, [Roger Zimmermann](https://www.comp.nus.edu.sg/~rogerz/roger.html) and [Jiashi Feng](https://sites.google.com/site/jshfeng/home),<br>
-"**ST-HOI**: A **S**patial-**T**emporal Baseline for **H**uman-**O**bject **I**nteraction Detection in Videos,"<br>
-in [ACM ICMR 2021](http://icmr2021.org/) - [Workshop on Intelligent Cross-Data Analysis and Retrieval](https://www2.nict.go.jp/bidal/icdar_icmr2021/index.html).<br><br>
-[[Paper]](https://arxiv.org/pdf/2105.11731.pdf) [[Slide]](figs/slide.pdf) [Video]
+**ST-HOI**: A **S**patial-**T**emporal Baseline for **H**uman-**O**bject **I**nteraction Detection in Videos<br>
+[[Paper]](https://arxiv.org/pdf/2105.11731.pdf) [[Slides]](figs/slide.pdf) [[Video]](https://dl.acm.org/doi/10.1145/3463944.3469097#sec-supp)<br><br>
+[Meng-Jiun Chiou](http://coldmanck.github.io/)<sup>1</sup>, Chun-Yu Liao<sup>2</sup>, Li-Wei Wang<sup>2</sup>, [Roger Zimmermann](https://www.comp.nus.edu.sg/~rogerz/roger.html)<sup>1</sup> and [Jiashi Feng](https://sites.google.com/site/jshfeng/home)<sup>1</sup><br>
+<sup>1</sup>National University of Singapore <sup>2</sup>ASUS Intelligent Cloud Services
+</div>
+
+<div align="center">
+    <img src="figs/motivation.jpg" width="500"><br>
+    "A Simple yet Elegant Way to Enrich Scene Graphs by Removing Reporting Biases"
 </div>
 
 **ST-HOI** is a strong, spatial-temporal-aware human-object interaction (HOI) detection baseline. To take into account accurate spatial-temporal information, ST-HOI exploits trajectory-based features including correctly-localized visual features, spatial-temporal masking pose features and trajectory features.
 
 **VidHOI** is one of the first large-scale *video-based* HOI detection benchmark. Note that in contrast to action detection datasets such as AVA/Kinetics, the interacting objects are explicitly annotated in VidHOI. We sampled and transformed video HOIs (*i.e.*, image HOIs in continuous frames) from an existing video dataset, [VidOR](https://xdshang.github.io/docs/vidor.html).
-
-<div align="center">
-    <img src="figs/motivation.jpg" width="500">
-</div>
 
 <div align="center">
     <img src="figs/VidHOI_comparison.png">
