@@ -3,7 +3,7 @@
 <div align="center">
     
 **ST-HOI**: A **S**patial-**T**emporal Baseline for **H**uman-**O**bject **I**nteraction Detection in Videos<br>
-[[Paper]](https://arxiv.org/pdf/2105.11731.pdf) [[Slides]](figs/slide.pdf) [[Video]](https://dl.acm.org/doi/10.1145/3463944.3469097#sec-supp)<br><br>
+[[Paper]](https://dl.acm.org/doi/pdf/10.1145/3463944.3469097) [[Slides]](figs/slide.pdf) [[Video]](https://dl.acm.org/doi/10.1145/3463944.3469097#sec-supp)<br><br>
 [Meng-Jiun Chiou](http://coldmanck.github.io/)<sup>1</sup>, Chun-Yu Liao<sup>2</sup>, Li-Wei Wang<sup>2</sup>, [Roger Zimmermann](https://www.comp.nus.edu.sg/~rogerz/roger.html)<sup>1</sup> and [Jiashi Feng](https://sites.google.com/site/jshfeng/home)<sup>1</sup><br>
 <sup>1</sup>National University of Singapore <sup>2</sup>ASUS Intelligent Cloud Services
 </div>
@@ -269,11 +269,12 @@ Replace `training` to `validation` for generating human poses for val split.
 # Citation
 Please cite our paper if you find our proposed models and/or benchmark helpful for your work:
 ```
-@article{chiou2021st,
-  title={ST-HOI: A Spatial-Temporal Baseline for Human-Object Interaction Detection in Videos},
-  author={Chiou, Meng-Jiun and Liao, Chun-Yu and Wang, Li-Wei and Zimmermann, Roger and Feng, Jiashi},
-  journal={arXiv preprint arXiv:2105.11731},
-  year={2021}
+@inproceedings{chiou2021st,
+title = {ST-HOI: A Spatial-Temporal Baseline for Human-Object Interaction Detection in Videos},
+author = {Chiou, Meng-Jiun and Liao, Chun-Yu and Wang, Li-Wei and Zimmermann, Roger and Feng, Jiashi},
+booktitle = {Proceedings of the 2021 Workshop on Intelligent Cross-Data Analysis and Retrieval},
+pages = {9–17},
+year = {2021},
 }
 ```
 
