@@ -5,7 +5,8 @@
 **ST-HOI**: A **S**patial-**T**emporal Baseline for **H**uman-**O**bject **I**nteraction Detection in Videos<br>
 [[Paper]](https://dl.acm.org/doi/pdf/10.1145/3463944.3469097) [[Slides]](figs/slide.pdf) [[Video]](https://dl.acm.org/doi/10.1145/3463944.3469097#sec-supp)<br><br>
 [Meng-Jiun Chiou](http://coldmanck.github.io/)<sup>1</sup>, Chun-Yu Liao<sup>2</sup>, Li-Wei Wang<sup>2</sup>, [Roger Zimmermann](https://www.comp.nus.edu.sg/~rogerz/roger.html)<sup>1</sup> and [Jiashi Feng](https://sites.google.com/site/jshfeng/home)<sup>1</sup><br>
-<sup>1</sup>National University of Singapore <sup>2</sup>ASUS Intelligent Cloud Services
+<sup>1</sup>National University of Singapore <sup>2</sup>ASUS Intelligent Cloud Services<br><br>
+To appear at [ACM ICMR 2021 Workshop on Intelligent Cross-Data Analysis and Retrieval](https://dl.acm.org/doi/proceedings/10.1145/3463944)
 </div>
 
 <div align="center">
