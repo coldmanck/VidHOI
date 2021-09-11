@@ -6,12 +6,11 @@
 [[Paper]](https://dl.acm.org/doi/pdf/10.1145/3463944.3469097) [[Slides]](figs/slide.pdf) [[Video]](https://dl.acm.org/doi/10.1145/3463944.3469097#sec-supp)<br><br>
 [Meng-Jiun Chiou](http://coldmanck.github.io/)<sup>1</sup>, Chun-Yu Liao<sup>2</sup>, Li-Wei Wang<sup>2</sup>, [Roger Zimmermann](https://www.comp.nus.edu.sg/~rogerz/roger.html)<sup>1</sup> and [Jiashi Feng](https://sites.google.com/site/jshfeng/home)<sup>1</sup><br>
 <sup>1</sup>National University of Singapore <sup>2</sup>ASUS Intelligent Cloud Services<br><br>
-To appear at [ACM ICMR 2021 Workshop on Intelligent Cross-Data Analysis and Retrieval](https://dl.acm.org/doi/proceedings/10.1145/3463944)
+appears at [ACM ICMR 2021 Workshop on Intelligent Cross-Data Analysis and Retrieval](https://dl.acm.org/doi/proceedings/10.1145/3463944)
 </div>
 
 <div align="center">
     <img src="figs/motivation.jpg" width="500"><br>
-    "A Simple yet Elegant Way to Enrich Scene Graphs by Removing Reporting Biases"
 </div>
 
 **ST-HOI** is a strong, spatial-temporal-aware human-object interaction (HOI) detection baseline. To take into account accurate spatial-temporal information, ST-HOI exploits trajectory-based features including correctly-localized visual features, spatial-temporal masking pose features and trajectory features.
