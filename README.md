@@ -266,6 +266,15 @@ python tools/inference_vidor.py --cfg experiments/vidor/hrnet/w48_384x288_adam_l
 Replace `training` to `validation` for generating human poses for val split.
 </details>
 
+# Frequently Asked Questions
+- Q: Is the evaluation different from that of image HOI datasets, such as HICO-DET?
+- A: Yes, the evaluation is indeed not the same. Instead of using sigmoid-thresholding the class scores to obtain the positives as done in HICO-DET, we simply the top-100 prediction scores as the positives for evaluation.
+- Q: In Table 2 of ST-HOI paper, Could you please let us know how the rare and non-rare numbers were retrieved? Shouldn't the Rare and Non-Rare numbers average to the Full mAP?
+- A: For rare setting, we only evaluate less frequent HOI triplet classes, and for non-rare triplets, we only evaluate on triplet classes excluding the aforementioned, rare triplet classes. Since the number of rare triplet classes != number of non-rare triplet classes, the full mAP isn't equal to the average of the two numbers. However for defining rare/non-rare classes, we were indeed a bit tricky: we defined the triplet classes with less than 25 occurrence in the validation set are rare. Please refer to https://github.com/coldmanck/VidHOI/blob/master/vidor_eval.ipynb and search for `delete_less_than_25_instances`.
+- Q: In our evaluation when we calculated the rare/non-rare triplets using the criterion mentioned in the paper, we got the exact same count as written in
+the paper. But while the non-rare mAP came close to what the paper reported, 26.2. the Rare mAP is way off to 10.15%.
+- A: Please refer to the aforementioned ipython notebook for rare/non-rare triplets evaluation. 
+
 # Citation
 Please cite our paper if you find our proposed models and/or benchmark helpful for your work:
 ```
