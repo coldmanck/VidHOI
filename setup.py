@@ -20,7 +20,7 @@ setup(
         "psutil",
         "matplotlib",
         "detectron2",
-        "opencv-python",
+        "opencv-python-headless",
         "pandas",
         "torchvision>=0.4.2",
         "sklearn",

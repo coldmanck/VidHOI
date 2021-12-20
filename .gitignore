@@ -11,6 +11,10 @@ slowfast/datasets/vidor/frame_lists
 slowfast/datasets/vidor/frames
 slowfast/datasets/vidor/frames.zip
 slowfast/datasets/vidor/video
+slowfast/datasets/vidor-github
+slowfast/datasets/vidor
+checkpoints
+src
 
 demo/*
 

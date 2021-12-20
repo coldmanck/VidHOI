@@ -514,16 +514,16 @@ _C.DETECTION.ROI_XFORM_RESOLUTION = 7
 _C.VIDOR = CfgNode()
 
 # Directory path of frames.
-_C.VIDOR.FRAME_DIR = "/home/aicsvidhoi1/SlowFast/slowfast/datasets/vidor/frames"
+_C.VIDOR.FRAME_DIR = "/opt/tiger/hhding/VidHOI/slowfast/datasets/vidor/frames"
 
 # Directory path for files of frame lists.
 _C.VIDOR.FRAME_LIST_DIR = (
-    "/home/aicsvidhoi1/SlowFast/slowfast/datasets/vidor/frame_lists"
+    "/opt/tiger/hhding/VidHOI/slowfast/datasets/vidor/frame_lists"
 )
 
 # Directory path for annotation files.
 _C.VIDOR.ANNOTATION_DIR = (
-    "/home/aicsvidhoi1/SlowFast/slowfast/datasets/vidor"
+    "/opt/tiger/hhding/VidHOI/slowfast/datasets/vidor"
 )
 
 # Filenames of training samples list files.
@@ -607,16 +607,16 @@ _C.VIDOR.TEST_GT_LESS_TO_ALIGN_NONGT = True
 _C.AVA = CfgNode()
 
 # Directory path of frames.
-_C.AVA.FRAME_DIR = "/home/aicsvidhoi1/SlowFast/slowfast/datasets/ava/frames"
+_C.AVA.FRAME_DIR = "/opt/tiger/hhding/VidHOI/slowfast/datasets/ava/frames"
 
 # Directory path for files of frame lists.
 _C.AVA.FRAME_LIST_DIR = (
-    "/home/aicsvidhoi1/SlowFast/slowfast/datasets/ava/frame_lists"
+    "/opt/tiger/hhding/VidHOI/slowfast/datasets/ava/frame_lists"
 )
 
 # Directory path for annotation files.
 _C.AVA.ANNOTATION_DIR = (
-    "/home/aicsvidhoi1/SlowFast/slowfast/datasets/ava/annotations-slowfast"
+    "/opt/tiger/hhding/VidHOI/slowfast/datasets/ava/annotations-slowfast"
 )
 
 # Filenames of training samples list files.
