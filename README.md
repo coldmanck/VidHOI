@@ -38,8 +38,8 @@ conda create -n vidhoi python=3.6 scipy numpy
 conda activate vidhoi
 ```
 2. Install PyTorch 1.4.0 and torchvision 0.5.0 following [the official installation guide](https://pytorch.org/get-started/previous-versions/)
-3. Install other requirements via `pip install -r requirements.txt`
-4. Install SlowFast and detectron2 following the instructions in [OLD_README.md](OLD_README.md).
+3. Install other requirements via `pip install -r requirements.txt` **(Note: remove torch/torchvision/torchaudio and other mismatched package requirements before proceeding!)**
+4. Install SlowFast and detectron2 following the instructions in [OLD_README.md](OLD_README.md). **(Note: skip the step of cloning a detectron2_repo/ from FacebookResearch. Install our provided detectron2_repo/ in this repository.)**
 
 ## Download VidHOI Benchmark
 Please refer to Section 4.1 of [our paper](https://arxiv.org/pdf/2105.11731.pdf) for more detail about the proposed benchmark.
@@ -90,6 +90,8 @@ Trained models are provided for performance verification purpose without running
 
 ## Experiments
 First, rename the folder `vidor-github` under `$ROOT/slowfast/dataset` to `vidor` before running any command. The following commands use ground truth `GT` (Oracle mode) by default. To use detected trajectories, refer to `NONGT` version of each model.
+
+Second, rename the paths in [defaults.py](slowfast/confic/defaults.py): specifically, search for `aicsvidhoi1` and replace the matched paths with yours.
 
 For checking each model's final performance including mAP, use [vidor_eval.ipynb](vidor_eval.ipynb) (TODO: write an automatic evaluation script)
 
