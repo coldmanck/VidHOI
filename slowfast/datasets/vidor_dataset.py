@@ -70,7 +70,7 @@ class Vidor(torch.utils.data.Dataset):
 
         if self.cfg.MODEL.LANG_FEAT:
             self.lang_feat_path = self.cfg.MODEL.LANG_FEAT_FILE_PATH
-            # assert os.path.isfile()
+            assert os.path.isfile(self.lang_feat_path)
 
         self._load_data(cfg)
 
@@ -102,7 +102,8 @@ class Vidor(torch.utils.data.Dataset):
 
         # load language features (GoogleNews)
         if self.cfg.MODEL.LANG_FEAT:
-            pass
+            with open(self.lang_feat_path, 'rb') as f:
+                self._lang_feat = np.load(f)
         
         # Loading frame paths.
         (
@@ -782,6 +783,9 @@ class Vidor(torch.utils.data.Dataset):
             extra_data['gt_boxes'] = gt_boxes
             extra_data['proposal_classes'] = proposal_classes
             extra_data['proposal_scores'] = proposal_scores
+
+        if self.cfg.MODEL.LANG_FEAT:
+            extra_data['lang_feat'] = self._lang_feat[obj_classes]
 
         if self.cfg.DEMO.ENABLE or self.cfg.DEMO.ENABLE_ALL:
             extra_data['orig_video_idx'] = orig_video_idx + '/' + orig_video_idx.split('/')[1] + '_' + f'{center_idx+1:06d}'

@@ -363,11 +363,10 @@ class HOIHead(nn.Module):
                         f_locs = torch.cat([s_x, s_y, s_w, s_h, s_a], dim=-1)
                         f_mot = (f_locs[1] - f_locs[0]).view(1, -1)
                         spa_temp_feats.append(torch.cat([f_locs, f_mot], dim=0))
-                        import pdb; pdb.set_trace()
                     hopairs_per_image['spa_temp_feats'] = torch.cat(spa_temp_feats)
 
                 if self.cfg.MODEL.LANG_FEAT:
-                    pass
+                    import pdb; pdb.set_trace()
 
                 if self.cfg.MODEL.USE_HUMAN_POSES:
                     assert len(torch.unique(person_idxs)) == n_person

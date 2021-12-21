@@ -68,9 +68,9 @@ def hoi_collate(batch):
     collated_extra_data = {}
     for key in extra_data[0].keys():
         data = [d[key] for d in extra_data]
-        if key in ["boxes", "ori_boxes", "obj_classes", "action_labels", "gt_boxes", "proposal_classes", "proposal_scores", "trajectories", "human_poses", "trajectory_boxes", "skeleton_imgs", "trajectory_box_masks"]:
+        if key in ["boxes", "ori_boxes", "obj_classes", "action_labels", "gt_boxes", "proposal_classes", "proposal_scores", "trajectories", "human_poses", "trajectory_boxes", "skeleton_imgs", "trajectory_box_masks", "lang_feat"]:
             # Append idx info to the bboxes before concatenating them.
-            if key in ['obj_classes', 'proposal_classes', 'proposal_scores']: # use a mask
+            if key in ['obj_classes', 'proposal_classes', 'proposal_scores', 'lang_feat']: # use a mask
                 max_len = max([len(i) for i in data])
                 # mask = np.zeros((len(data), max_len))
                 obj_classes = []
@@ -78,8 +78,11 @@ def hoi_collate(batch):
                 for i in range(len(data)):
                     length = data[i].shape[0]
                     lengths.append(length)
-                    entry = np.full((length, 1), -1)
-                    entry[:] = float(i)
+                    if key == 'lang_feat':
+                        entry = np.zeros((length, 300))
+                    else:
+                        entry = np.full((length, 1), -1)
+                        entry[:] = float(i)
                     # entry = [np.full((data[i].shape[0], 1), float(i)), data[i].reshape(-1, 1)]
                     entry = np.concatenate((entry, data[i].reshape(-1, 1)), axis=1)
                     obj_classes.append(entry)
