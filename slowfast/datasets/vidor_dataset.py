@@ -68,6 +68,10 @@ class Vidor(torch.utils.data.Dataset):
         elif self.cfg.MODEL.USE_HUMAN_POSES:
             self.human_poses_path = cfg.VIDOR.TRAIN_GT_HUMAN_POSES if split == 'train' else cfg.VIDOR.TEST_GT_HUMAN_POSES
 
+        if self.cfg.MODEL.LANG_FEAT:
+            self.lang_feat_path = self.cfg.MODEL.LANG_FEAT_FILE_PATH
+            # assert os.path.isfile()
+
         self._load_data(cfg)
 
     def _load_data(self, cfg):
@@ -96,6 +100,10 @@ class Vidor(torch.utils.data.Dataset):
                 print('Loading human poses for spatial configuration module...')
             self._human_poses_root = os.path.join(cfg.VIDOR.ANNOTATION_DIR, self.human_poses_path)
 
+        # load language features (GoogleNews)
+        if self.cfg.MODEL.LANG_FEAT:
+            pass
+        
         # Loading frame paths.
         (
             self._image_paths,

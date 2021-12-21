@@ -335,8 +335,14 @@ class HOIHead(nn.Module):
                     n_frames = self.cfg.DATA.NUM_FRAMES # 32
                     spa_temp_feats = []
                     for i in range(n_pairs):
-                        s = hopairs_per_image['person_trajectories'][i].view(n_frames, 4)[0, -1]
-                        o = hopairs_per_image['object_trajectories'][i].view(n_frames, 4)[0, -1]
+                        s = torch.cat([
+                            hopairs_per_image['person_trajectories'][i].view(n_frames, 4)[0].view(1, -1),
+                            hopairs_per_image['person_trajectories'][i].view(n_frames, 4)[-1].view(1, -1)
+                        ], dim=0)
+                        o = torch.cat([
+                            hopairs_per_image['object_trajectories'][i].view(n_frames, 4)[0].view(1, -1),
+                            hopairs_per_image['object_trajectories'][i].view(n_frames, 4)[-1].view(1, -1)
+                        ], dim=0)
                         
                         s_c_x = (s[:, 0] + s[:, 2] / 2)
                         s_c_y = (s[:, 1] + s[:, 3] / 2)
@@ -348,15 +354,15 @@ class HOIHead(nn.Module):
                         o_c_w = o[:, 2] - o[:, 0]
                         o_c_h = o[:, 3] - o[:, 1]
 
-                        s_x = (s_c_x - o_c_x) / s_c_w
-                        s_y = (s_c_y - o_c_y) / s_c_h
-                        s_w = torch.log(s_c_w / o_c_w)
-                        s_h = torch.log(s_c_h / o_c_h)
-                        s_a = torch.log(s_c_h * s_c_w / (o_c_w * o_c_h))
+                        s_x = ((s_c_x - o_c_x) / s_c_w).view(2, -1)
+                        s_y = ((s_c_y - o_c_y) / s_c_h).view(2, -1)
+                        s_w = (torch.log(s_c_w / o_c_w)).view(2, -1)
+                        s_h = (torch.log(s_c_h / o_c_h)).view(2, -1)
+                        s_a = (torch.log(s_c_h * s_c_w / (o_c_w * o_c_h))).view(2, -1)
 
                         f_locs = torch.cat([s_x, s_y, s_w, s_h, s_a], dim=-1)
-                        f_mot = f_locs[1] - f_locs[0]
-                        spa_temp_feats.append(torch.cat([f_locs, f_mot], dim=-1))
+                        f_mot = (f_locs[1] - f_locs[0]).view(1, -1)
+                        spa_temp_feats.append(torch.cat([f_locs, f_mot], dim=0))
                         import pdb; pdb.set_trace()
                     hopairs_per_image['spa_temp_feats'] = torch.cat(spa_temp_feats)
 
