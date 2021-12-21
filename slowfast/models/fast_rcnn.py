@@ -673,6 +673,8 @@ class HoiOutputLayers(nn.Module):
         n_additional_feats=0,
         use_spa_conf=False,
         spa_conf_dim=256,
+        spa_temp_feat=False,
+        lang_feat=False,
     ):
         """
         Args:
@@ -764,6 +766,8 @@ class HoiOutputLayers(nn.Module):
             "n_additional_feats": n_additional_feats,
             "use_spa_conf": cfg.MODEL.USE_SPA_CONF,
             "spa_conf_dim": cfg.MODEL.SPA_CONF_FC_DIM,
+            "spa_temp_feat": cfg.MODEL.SPA_TEMP_FEAT,
+            "lang_feat": cfg.MODEL.LANG_FEAT,
         }
 
     def forward(self, u_x, p_x, o_x, spa_conf_maps=None):

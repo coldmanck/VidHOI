@@ -273,6 +273,10 @@ _C.MODEL.SPA_CONF_HEATMAP_SIZE = 128 # Not used for now (now after cropping, hea
 
 _C.MODEL.SPA_CONF_FC_DIM = 256
 
+# Features for VidVRD-MMF (Video visual relation detection via multi-modal feature fusion, ACM MM'19)
+_C.MODEL.SPA_TEMP_FEAT = False # might be True if MODEL.USE_TRAJECTORIES is True
+_C.MODEL.LANG_FEAT = False
+
 # -----------------------------------------------------------------------------
 # SlowFast options
 # -----------------------------------------------------------------------------

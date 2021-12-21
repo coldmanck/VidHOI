@@ -330,6 +330,39 @@ class HOIHead(nn.Module):
                         relativity_feats.append(relativity_feat)
                     hopairs_per_image['relativity_feats'] = torch.cat(relativity_feats)
 
+                if self.cfg.MODEL.SPA_TEMP_FEAT:
+                    n_pairs = len(person_idxs)
+                    n_frames = self.cfg.DATA.NUM_FRAMES # 32
+                    spa_temp_feats = []
+                    for i in range(n_pairs):
+                        s = hopairs_per_image['person_trajectories'][i].view(n_frames, 4)[0, -1]
+                        o = hopairs_per_image['object_trajectories'][i].view(n_frames, 4)[0, -1]
+                        
+                        s_c_x = (s[:, 0] + s[:, 2] / 2)
+                        s_c_y = (s[:, 1] + s[:, 3] / 2)
+                        s_c_w = s[:, 2] - s[:, 0]
+                        s_c_h = s[:, 3] - s[:, 1]
+
+                        o_c_x = (o[:, 0] + o[:, 2] / 2)
+                        o_c_y = (o[:, 1] + o[:, 3] / 2)
+                        o_c_w = o[:, 2] - o[:, 0]
+                        o_c_h = o[:, 3] - o[:, 1]
+
+                        s_x = (s_c_x - o_c_x) / s_c_w
+                        s_y = (s_c_y - o_c_y) / s_c_h
+                        s_w = torch.log(s_c_w / o_c_w)
+                        s_h = torch.log(s_c_h / o_c_h)
+                        s_a = torch.log(s_c_h * s_c_w / (o_c_w * o_c_h))
+
+                        f_locs = torch.cat([s_x, s_y, s_w, s_h, s_a], dim=-1)
+                        f_mot = f_locs[1] - f_locs[0]
+                        spa_temp_feats.append(torch.cat([f_locs, f_mot], dim=-1))
+                        import pdb; pdb.set_trace()
+                    hopairs_per_image['spa_temp_feats'] = torch.cat(spa_temp_feats)
+
+                if self.cfg.MODEL.LANG_FEAT:
+                    pass
+
                 if self.cfg.MODEL.USE_HUMAN_POSES:
                     assert len(torch.unique(person_idxs)) == n_person
                     n_repeat = len(person_idxs) // n_person
