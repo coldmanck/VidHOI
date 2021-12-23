@@ -167,7 +167,7 @@ class HOIHead(nn.Module):
             self.spa_conf_fc = nn.Linear(256*8*8, self.cfg.MODEL.SPA_CONF_FC_DIM)
 
     @torch.no_grad()
-    def construct_hopairs(self, bboxes, obj_classes, obj_classes_lengths, action_labels, gt_obj_classes=None, gt_obj_classes_lengths=None, trajectories=None, human_poses=None, skeleton_imgs=None, trajectory_box_masks=None):
+    def construct_hopairs(self, bboxes, obj_classes, obj_classes_lengths, action_labels, gt_obj_classes=None, gt_obj_classes_lengths=None, trajectories=None, human_poses=None, skeleton_imgs=None, trajectory_box_masks=None, lang_feat=None):
         """
         Prepare person-object pairs to be used to train HOI heads.
         At training, it returns union regions of person-object proposals and assigns
@@ -302,6 +302,10 @@ class HOIHead(nn.Module):
             hopairs_per_image['object_boxes'] = boxes_per_image[object_idxs]
             hopairs_per_image['bbox_pair_ids'] = bbox_pair_ids
 
+            if self.cfg.MODEL.LANG_FEAT:
+                lang_feat_per_img = lang_feat[start_idx:end_idx, 300:]
+                hopairs_per_image['lang_feat'] = lang_feat_per_img[object_idxs]
+
             if trajectories is not None:
                 hopairs_per_image['person_trajectories'] = trajectories_per_image[person_idxs]
                 hopairs_per_image['object_trajectories'] = trajectories_per_image[object_idxs]
@@ -361,12 +365,9 @@ class HOIHead(nn.Module):
                         s_a = (torch.log(s_c_h * s_c_w / (o_c_w * o_c_h))).view(2, -1)
 
                         f_locs = torch.cat([s_x, s_y, s_w, s_h, s_a], dim=-1)
-                        f_mot = (f_locs[1] - f_locs[0]).view(1, -1)
-                        spa_temp_feats.append(torch.cat([f_locs, f_mot], dim=0))
+                        f_mot = f_locs[1] - f_locs[0]
+                        spa_temp_feats.append(torch.cat([f_locs.view(-1), f_mot]).view(1, -1))
                     hopairs_per_image['spa_temp_feats'] = torch.cat(spa_temp_feats)
-
-                if self.cfg.MODEL.LANG_FEAT:
-                    import pdb; pdb.set_trace()
 
                 if self.cfg.MODEL.USE_HUMAN_POSES:
                     assert len(torch.unique(person_idxs)) == n_person
@@ -408,7 +409,7 @@ class HOIHead(nn.Module):
 
         return hopairs
     
-    def forward(self, features, bboxes, obj_classes, obj_classes_lengths, action_labels, gt_obj_classes=None, gt_obj_classes_lengths=None, trajectories=None, human_poses=None, toi_pooled_features=None, trajectory_boxes=None, skeleton_imgs=None, trajectory_box_masks=None):
+    def forward(self, features, bboxes, obj_classes, obj_classes_lengths, action_labels, gt_obj_classes=None, gt_obj_classes_lengths=None, trajectories=None, human_poses=None, toi_pooled_features=None, trajectory_boxes=None, skeleton_imgs=None, trajectory_box_masks=None, lang_feat=None):
         # (Pdb) features.shape
         # torch.Size([16, 2304, 14, 14])
         # (Pdb) bboxes.shape
@@ -428,7 +429,7 @@ class HOIHead(nn.Module):
         #         [1., 0.],
         #         [1., 0.]], device='cuda:0')
 
-        hopairs = self.construct_hopairs(bboxes, obj_classes, obj_classes_lengths, action_labels, gt_obj_classes, gt_obj_classes_lengths, trajectories, human_poses, skeleton_imgs, trajectory_box_masks)
+        hopairs = self.construct_hopairs(bboxes, obj_classes, obj_classes_lengths, action_labels, gt_obj_classes, gt_obj_classes_lengths, trajectories, human_poses, skeleton_imgs, trajectory_box_masks, lang_feat)
         # NOTE that requires_grad for data in `hopairs` are False!!! Set to True before proceeding!
         
         spa_conf_maps = None
@@ -515,6 +516,9 @@ class HOIHead(nn.Module):
 
         if trajectories is not None:
             if self.cfg.MODEL.USE_TRAJECTORY_CONV:
+                import pdb; pdb.set_trace()
+            elif self.cfg.MODEL.SPA_TEMP_FEAT:
+                spa_temp_feats = torch.cat([x['spa_temp_feats'] for x in hopairs]) # torch.Size([96, 190])
                 import pdb; pdb.set_trace()
             elif self.cfg.MODEL.USE_RELATIVITY_FEAT:
                 relativity_feats = torch.cat([x['relativity_feats'] for x in hopairs]) # torch.Size([96, 190])
@@ -608,7 +612,11 @@ class HOIHead(nn.Module):
                     print('USE_HUMAN_POSES with simple concat IS NOT implemented!')
                     assert False
         
-        hoi_predictions = self.hoi_predictor(union_features, person_features, object_features, spa_conf_maps=spa_conf_maps)
+        lang_feat = None
+        if self.cfg.MODEL.LANG_FEAT:
+            lang_feat = torch.cat([x['lang_feat'] for x in hopairs]) # torch.Size
+
+        hoi_predictions = self.hoi_predictor(union_features, person_features, object_features, spa_conf_maps=spa_conf_maps, lang_feat=lang_feat)
 
         del union_features, person_features, object_features, features
 

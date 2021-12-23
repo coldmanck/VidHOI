@@ -80,11 +80,12 @@ def hoi_collate(batch):
                     lengths.append(length)
                     if key == 'lang_feat':
                         entry = np.zeros((length, 300))
+                        entry = np.concatenate((entry, data[i].reshape(-1, 300)), axis=1)
                     else:
                         entry = np.full((length, 1), -1)
                         entry[:] = float(i)
-                    # entry = [np.full((data[i].shape[0], 1), float(i)), data[i].reshape(-1, 1)]
-                    entry = np.concatenate((entry, data[i].reshape(-1, 1)), axis=1)
+                        # entry = [np.full((data[i].shape[0], 1), float(i)), data[i].reshape(-1, 1)]
+                        entry = np.concatenate((entry, data[i].reshape(-1, 1)), axis=1)
                     obj_classes.append(entry)
                     # mask[i][:length] = 1
                 obj_classes = np.concatenate(obj_classes, axis=0)

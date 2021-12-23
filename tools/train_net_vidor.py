@@ -86,7 +86,7 @@ def train_epoch(
         optim.set_lr(optimizer, lr)
 
         # Compute the predictions.
-        trajectories = human_poses = trajectory_boxes = skeleton_imgs = trajectory_box_masks = None
+        trajectories = human_poses = trajectory_boxes = skeleton_imgs = trajectory_box_masks = lang_feat = None
         if cfg.MODEL.USE_TRAJECTORIES:
             trajectories = meta['trajectories']
         if cfg.MODEL.USE_HUMAN_POSES:
@@ -96,9 +96,11 @@ def train_epoch(
         if cfg.MODEL.USE_SPA_CONF:
             skeleton_imgs = meta['skeleton_imgs']
             trajectory_box_masks = meta['trajectory_box_masks']
+        if cfg.MODEL.LANG_FEAT:
+            lang_feat = meta['lang_feat']
         # if cfg.VIDOR.TEST_DEBUG:
         #     import pdb; pdb.set_trace()
-        preds, action_labels, bbox_pair_ids = model(inputs, meta["boxes"], meta['obj_classes'], meta['obj_classes_lengths'], meta['action_labels'], trajectories=trajectories, human_poses=human_poses, trajectory_boxes=trajectory_boxes, skeleton_imgs=skeleton_imgs, trajectory_box_masks=trajectory_box_masks)
+        preds, action_labels, bbox_pair_ids = model(inputs, meta["boxes"], meta['obj_classes'], meta['obj_classes_lengths'], meta['action_labels'], trajectories=trajectories, human_poses=human_poses, trajectory_boxes=trajectory_boxes, skeleton_imgs=skeleton_imgs, trajectory_box_masks=trajectory_box_masks, lang_feat=lang_feat)
         
         # import pdb; pdb.set_trace()
         # self._log_accuracy()
@@ -187,7 +189,7 @@ def eval_epoch(val_loader, model, val_meter, cur_epoch, cfg, writer=None):
                 meta[key] = val.cuda(non_blocking=True)
 
         # Compute the predictions.
-        trajectories = human_poses = trajectory_boxes = skeleton_imgs = trajectory_box_masks = None
+        trajectories = human_poses = trajectory_boxes = skeleton_imgs = trajectory_box_masks = lang_feat = None
         if cfg.MODEL.USE_TRAJECTORIES:
             trajectories = meta['trajectories']
         if cfg.MODEL.USE_HUMAN_POSES:
@@ -197,7 +199,9 @@ def eval_epoch(val_loader, model, val_meter, cur_epoch, cfg, writer=None):
         if cfg.MODEL.USE_SPA_CONF:
             skeleton_imgs = meta['skeleton_imgs']
             trajectory_box_masks = meta['trajectory_box_masks']
-        preds, action_labels, bbox_pair_ids, gt_bbox_pair_ids = model(inputs, meta["boxes"], meta['proposal_classes'], meta['proposal_lengths'], meta['action_labels'], meta['obj_classes'], meta['obj_classes_lengths'], trajectories=trajectories, human_poses=human_poses, trajectory_boxes=trajectory_boxes, skeleton_imgs=skeleton_imgs, trajectory_box_masks=trajectory_box_masks)
+        if cfg.MODEL.LANG_FEAT:
+            lang_feat = meta['lang_feat']
+        preds, action_labels, bbox_pair_ids, gt_bbox_pair_ids = model(inputs, meta["boxes"], meta['proposal_classes'], meta['proposal_lengths'], meta['action_labels'], meta['obj_classes'], meta['obj_classes_lengths'], trajectories=trajectories, human_poses=human_poses, trajectory_boxes=trajectory_boxes, skeleton_imgs=skeleton_imgs, trajectory_box_masks=trajectory_box_masks, lang_feat=lang_feat)
 
         preds_score = F.sigmoid(preds).cpu()
         preds = preds_score >= 0.5 # Convert scores into 'True' or 'False'

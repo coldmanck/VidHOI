@@ -770,16 +770,22 @@ class HoiOutputLayers(nn.Module):
             "lang_feat": cfg.MODEL.LANG_FEAT,
         }
 
-    def forward(self, u_x, p_x, o_x, spa_conf_maps=None):
+    def forward(self, u_x, p_x, o_x, spa_conf_maps=None, lang_feat=None):
         """
         Returns:
             Tensor: NxK scores for each human-object pair
         """
         if self.use_spa_conf:
             assert spa_conf_maps is not None
-            x = torch.cat([spa_conf_maps, u_x, p_x, o_x], dim=-1)
+            if lang_feat:
+                x = torch.cat([spa_conf_maps, u_x, p_x, o_x, lang_feat], dim=-1)
+            else:
+                x = torch.cat([spa_conf_maps, u_x, p_x, o_x], dim=-1)
         else:
-            x = torch.cat([u_x, p_x, o_x], dim=-1)
+            if lang_feat:
+                x = torch.cat([u_x, p_x, o_x, lang_feat], dim=-1)
+            else:
+                x = torch.cat([u_x, p_x, o_x], dim=-1)
         x = F.relu(self.cls_fc1(x))
         x = self.cls_score(x)
         return x

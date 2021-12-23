@@ -522,7 +522,7 @@ class SlowFast(nn.Module):
                 act_func=cfg.MODEL.HEAD_ACT,
             )
 
-    def forward(self, x, bboxes=None, obj_classes=None, obj_classes_lengths=None, action_labels=None, gt_obj_classes=None, gt_obj_classes_lengths=None, trajectories=None, human_poses=None, trajectory_boxes=None, skeleton_imgs=None, trajectory_box_masks=None):
+    def forward(self, x, bboxes=None, obj_classes=None, obj_classes_lengths=None, action_labels=None, gt_obj_classes=None, gt_obj_classes_lengths=None, trajectories=None, human_poses=None, trajectory_boxes=None, skeleton_imgs=None, trajectory_box_masks=None, lang_feat=None):
         # x is a list of two path way features. E.g.,
         # (Pdb) x[0].shape
         # torch.Size([batch_size, 3, 8, 224, 224])
@@ -548,7 +548,7 @@ class SlowFast(nn.Module):
             if self.enable_detection_hoi:
                 toi_pooled_features = self.toi_head(x, bboxes, trajectory_boxes) if self.enable_toi_pooling else None # need to go before x = self.head(x)
                 x = self.head(x)
-                x = self.hoi_head(x, bboxes, obj_classes, obj_classes_lengths, action_labels, gt_obj_classes, gt_obj_classes_lengths, trajectories, human_poses, toi_pooled_features, trajectory_boxes, skeleton_imgs, trajectory_box_masks)
+                x = self.hoi_head(x, bboxes, obj_classes, obj_classes_lengths, action_labels, gt_obj_classes, gt_obj_classes_lengths, trajectories, human_poses, toi_pooled_features, trajectory_boxes, skeleton_imgs, trajectory_box_masks, lang_feat)
             else:
                 x = self.head(x, bboxes)
         else:
