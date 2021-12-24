@@ -675,6 +675,7 @@ class HoiOutputLayers(nn.Module):
         spa_conf_dim=256,
         spa_temp_feat=False,
         lang_feat=False,
+        no_use_trajectory_feat=False,
     ):
         """
         Args:
@@ -690,23 +691,35 @@ class HoiOutputLayers(nn.Module):
 
         self.use_trajectories = use_trajectories
         self.use_spa_conf = use_spa_conf
+        self.spa_temp_feat = spa_temp_feat
+        self.lang_feat = lang_feat
         # The prediction layer for num_classes foreground classes. The input should be
         # features from person, object and union region. Thus, the input size * 3.
         # self.cls_fc1 = Linear(input_size * 3 + trajectory_frames if use_trajectories else input_size * 3, input_size)
+
+        cls_fc1_input_size = input_size * 3
+        if self.spa_temp_feat:
+            cls_fc1_input_size += 15
+        if self.lang_feat:
+            cls_fc1_input_size += 300
+
+        # import pdb; pdb.set_trace()
         if use_fc_proj_dim:
-            self.cls_fc1 = Linear(input_size * 3 + proj_dim * n_additional_feats, input_size)
+            self.cls_fc1 = Linear(cls_fc1_input_size + proj_dim * n_additional_feats, input_size)
         elif use_trajectories and not use_fcs:
             if use_relativity_feat: 
                 # C (32*2), S (32*2), M (31*2)
                 trajectory_frames = num_frames * 2 * 2 + (num_frames - 1) * 2
             elif use_spa_conf:
                 trajectory_frames = num_frames * 4 * 2 + spa_conf_dim
+            elif no_use_trajectory_feat: # no trajectory feature used
+                trajectory_frames = 0
             else:
                 # *4 for four coordinates, *2 for s & o respectively
                 trajectory_frames = num_frames * 4 * 2
-            self.cls_fc1 = Linear(input_size * 3 + trajectory_frames, input_size)
+            self.cls_fc1 = Linear(cls_fc1_input_size + trajectory_frames, input_size)
         else:
-            self.cls_fc1 = Linear(input_size * 3, input_size)
+            self.cls_fc1 = Linear(cls_fc1_input_size, input_size)
         self.cls_score = Linear(input_size, num_classes)
 
         for layer in [self.cls_fc1, self.cls_score]:
@@ -768,24 +781,34 @@ class HoiOutputLayers(nn.Module):
             "spa_conf_dim": cfg.MODEL.SPA_CONF_FC_DIM,
             "spa_temp_feat": cfg.MODEL.SPA_TEMP_FEAT,
             "lang_feat": cfg.MODEL.LANG_FEAT,
+            "no_use_trajectory_feat": cfg.MODEL.NO_TRAJECTORIES_FEAT, 
         }
 
-    def forward(self, u_x, p_x, o_x, spa_conf_maps=None, lang_feat=None):
+    def forward(self, u_x, p_x, o_x, spa_conf_maps=None, lang_feat=None, spa_temp_feats=None):
         """
         Returns:
             Tensor: NxK scores for each human-object pair
         """
+        x = []
+        
         if self.use_spa_conf:
             assert spa_conf_maps is not None
-            if lang_feat:
-                x = torch.cat([spa_conf_maps, u_x, p_x, o_x, lang_feat], dim=-1)
-            else:
-                x = torch.cat([spa_conf_maps, u_x, p_x, o_x], dim=-1)
-        else:
-            if lang_feat:
-                x = torch.cat([u_x, p_x, o_x, lang_feat], dim=-1)
-            else:
-                x = torch.cat([u_x, p_x, o_x], dim=-1)
+            x.append(spa_conf_maps)
+
+        x.extend([u_x, p_x, o_x])
+
+        if self.lang_feat:
+            assert lang_feat is not None
+            x.append(lang_feat)
+        
+        if self.spa_temp_feat:
+            assert spa_temp_feats is not None
+            x.append(spa_temp_feats)
+        
+        x = torch.cat(x, dim=-1)
+        
+        # import pdb; pdb.set_trace()
+        # torch.Size([118, 1851]) 512*3+300+15
         x = F.relu(self.cls_fc1(x))
         x = self.cls_score(x)
         return x

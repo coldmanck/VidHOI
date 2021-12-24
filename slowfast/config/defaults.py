@@ -260,6 +260,7 @@ _C.MODEL.HOI_BOX_HEAD.HOI_BATCH_SIZE_PER_IMAGE = 128
 
 # Additional Features
 _C.MODEL.USE_TRAJECTORIES = False
+_C.MODEL.NO_TRAJECTORIES_FEAT = False # do not use trajectory bounding boxes as features
 _C.MODEL.USE_RELATIVITY_FEAT = False # might be True if MODEL.USE_TRAJECTORIES is True
 _C.MODEL.USE_HUMAN_POSES = False # might be True if MODEL.USE_TRAJECTORIES is True
 _C.MODEL.USE_FCS = False # currently USE_FCS needs to be True if USE_HUMAN_POSES is True!

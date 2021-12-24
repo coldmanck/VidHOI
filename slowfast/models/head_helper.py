@@ -92,6 +92,7 @@ class HOIHead(nn.Module):
             self.object_bn = nn.BatchNorm1d(cfg.MODEL.HOI_BOX_HEAD.FC_DIM)
         
         self.n_additional_feats = 0
+        self.no_use_trajectory_feat = self.cfg.MODEL.NO_TRAJECTORIES_FEAT
         if cfg.MODEL.USE_FCS:
             if self.cfg.MODEL.USE_RELATIVITY_FEAT:
                 self.relativity_feat_fc = nn.Linear(cfg.DATA.NUM_FRAMES * 2 * 2 + cfg.DATA.NUM_FRAMES * 2, cfg.MODEL.HOI_BOX_HEAD.FC_DIM)
@@ -102,6 +103,9 @@ class HOIHead(nn.Module):
                     self.relativity_bn2 = nn.BatchNorm1d(cfg.MODEL.HOI_BOX_HEAD.FC_DIM)
 
             elif self.cfg.MODEL.USE_TRAJECTORIES:
+                assert not self.no_use_trajectory_feat
+                self.use_trajectory_feat = True
+
                 self.trajectory_fc = nn.Linear(cfg.DATA.NUM_FRAMES * 4, cfg.MODEL.HOI_BOX_HEAD.FC_DIM)
                 self.trajectory_fc_person = nn.Linear(cfg.MODEL.HOI_BOX_HEAD.FC_DIM * 2, cfg.MODEL.HOI_BOX_HEAD.FC_DIM)
                 self.trajectory_fc_object = nn.Linear(cfg.MODEL.HOI_BOX_HEAD.FC_DIM * 2, cfg.MODEL.HOI_BOX_HEAD.FC_DIM)
@@ -130,6 +134,9 @@ class HOIHead(nn.Module):
                     self.relativity_bn = nn.BatchNorm1d(cfg.MODEL.HOI_BOX_HEAD.PROJ_DIM)
 
             elif self.cfg.MODEL.USE_TRAJECTORIES:
+                assert not self.no_use_trajectory_feat
+                self.use_trajectory_feat = True
+
                 self.n_additional_feats += 1
                 self.trajectory_fc = nn.Linear(cfg.DATA.NUM_FRAMES * 4, self.cfg.MODEL.HOI_BOX_HEAD.PROJ_DIM // 2)
                 
@@ -514,12 +521,13 @@ class HOIHead(nn.Module):
             person_features = F.relu(person_features)
             object_features = F.relu(object_features)
 
+        spa_temp_feats = None
+        use_trajectory_feat = False
         if trajectories is not None:
             if self.cfg.MODEL.USE_TRAJECTORY_CONV:
                 import pdb; pdb.set_trace()
             elif self.cfg.MODEL.SPA_TEMP_FEAT:
                 spa_temp_feats = torch.cat([x['spa_temp_feats'] for x in hopairs]) # torch.Size([96, 190])
-                import pdb; pdb.set_trace()
             elif self.cfg.MODEL.USE_RELATIVITY_FEAT:
                 relativity_feats = torch.cat([x['relativity_feats'] for x in hopairs]) # torch.Size([96, 190])
                 
@@ -548,6 +556,7 @@ class HOIHead(nn.Module):
                 
                 if self.cfg.MODEL.USE_FCS:
                     assert not self.cfg.MODEL.USE_FC_PROJ_DIM
+                    assert not self.no_use_trajectory_feat
 
                     person_trajectories = self.trajectory_fc(person_trajectories)
                     if self.cfg.MODEL.USE_BN:
@@ -569,6 +578,8 @@ class HOIHead(nn.Module):
                         object_features = self.trajectory_fc_object(object_features)
                     object_features = F.relu(object_features)
                 elif self.cfg.MODEL.USE_FC_PROJ_DIM:
+                    assert not self.no_use_trajectory_feat
+
                     person_trajectories = self.trajectory_fc(person_trajectories)
                     object_trajectories = self.trajectory_fc(object_trajectories)
 
@@ -614,9 +625,9 @@ class HOIHead(nn.Module):
         
         lang_feat = None
         if self.cfg.MODEL.LANG_FEAT:
-            lang_feat = torch.cat([x['lang_feat'] for x in hopairs]) # torch.Size
+            lang_feat = torch.cat([x['lang_feat'] for x in hopairs]) # torch.Size([74, 300])
 
-        hoi_predictions = self.hoi_predictor(union_features, person_features, object_features, spa_conf_maps=spa_conf_maps, lang_feat=lang_feat)
+        hoi_predictions = self.hoi_predictor(union_features, person_features, object_features, spa_conf_maps=spa_conf_maps, lang_feat=lang_feat, spa_temp_feats=spa_temp_feats)
 
         del union_features, person_features, object_features, features
 
