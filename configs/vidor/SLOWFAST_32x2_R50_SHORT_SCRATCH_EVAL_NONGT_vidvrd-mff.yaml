@@ -25,9 +25,9 @@ VIDOR:
     # "ava_train_v2.2.csv",
     # "person_box_67091280_iou90/ava_detection_train_boxes_and_labels_include_negative_v2.2.csv",
   ]
-  TEST_WITH_GT: True
+  TEST_WITH_GT: False
   TEST_GT_BOX_LISTS: ['val_frame_annots.json'] # use gt for now
-  TEST_PREDICT_BOX_LISTS: ['val_instances_predictions_train_small_vidor_with_pseudo_labels.pth'] # ['val_frame_annots.json'] # use gt for now
+  TEST_PREDICT_BOX_LISTS: ['det_val_frame_annots.json']
   # TEST_DEBUG: False # FOR DEBUG PURPOSE -> set via command line please!
 SLOWFAST:
   ALPHA: 4
@@ -94,7 +94,7 @@ DATA_LOADER:
 NUM_GPUS: 8
 NUM_SHARDS: 1
 RNG_SEED: 0
-OUTPUT_DIR: ./output/SLOWFAST_32x2_R50_SHORT_SCRATCH_EVAL_GT_vidvrd-mff
+OUTPUT_DIR: ./output/SLOWFAST_32x2_R50_SHORT_SCRATCH_EVAL_NONGT_vidvrd-mff
 TENSORBOARD:
   ENABLE: True
-  LOG_DIR: SLOWFAST_32x2_R50_SHORT_SCRATCH_EVAL_GT_vidvrd-mff
+  LOG_DIR: SLOWFAST_32x2_R50_SHORT_SCRATCH_EVAL_NONGT_vidvrd-mff

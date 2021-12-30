@@ -256,6 +256,8 @@ class HOIHead(nn.Module):
                 trajectories_per_image = trajectories[start_idx:end_idx, 1:]
             if trajectory_box_masks is not None:
                 trajectory_box_masks_per_image = trajectory_box_masks[start_idx:end_idx, 1:]
+            if lang_feat is not None:
+                lang_feat_per_imgae = lang_feat[start_idx:end_idx, 1:]
             obj_classes_per_image = obj_classes[start_idx:end_idx]
             
             if human_poses is not None or skeleton_imgs is not None:
@@ -313,6 +315,15 @@ class HOIHead(nn.Module):
                 lang_feat_per_img = lang_feat[start_idx:end_idx, 300:]
                 hopairs_per_image['lang_feat'] = lang_feat_per_img[object_idxs]
 
+                assert skeletons.shape == trajectory_box_masks_object.shape == trajectory_box_masks_person.shape # sanity check
+                hopairs_per_image['spa_conf_maps'] = torch.cat([
+                    torch.cat([
+                        torch.cat([
+                            skeletons[i, j].unsqueeze(0), trajectory_box_masks_person[i, j].unsqueeze(0), trajectory_box_masks_object[i, j].unsqueeze(0)
+                        ]).unsqueeze(0) for j in range(skeletons.shape[1])
+                    ]).unsqueeze(0) for i in range(skeletons.shape[0])
+                ]).permute(0, 2, 1, 3, 4)
+
             if trajectories is not None:
                 hopairs_per_image['person_trajectories'] = trajectories_per_image[person_idxs]
                 hopairs_per_image['object_trajectories'] = trajectories_per_image[object_idxs]
@@ -345,17 +356,29 @@ class HOIHead(nn.Module):
                     n_pairs = len(person_idxs)
                     n_frames = self.cfg.DATA.NUM_FRAMES # 32
                     spa_temp_feats = []
+
+                    # lang_feat_person = lang_feat_per_imgae[person_idxs]
+                    # lang_feat_object = lang_feat_per_imgae[object_idxs]
+                    
                     for i in range(n_pairs):
-                        s = torch.cat([
-                            hopairs_per_image['person_trajectories'][i].view(n_frames, 4)[0].view(1, -1),
-                            hopairs_per_image['person_trajectories'][i].view(n_frames, 4)[-1].view(1, -1)
-                        ], dim=0)
-                        o = torch.cat([
-                            hopairs_per_image['object_trajectories'][i].view(n_frames, 4)[0].view(1, -1),
-                            hopairs_per_image['object_trajectories'][i].view(n_frames, 4)[-1].view(1, -1)
-                        ], dim=0)
+                        try:
+                            s = torch.cat([
+                                hopairs_per_image['person_trajectories'][i].view(-1, 4)[0].view(1, -1),
+                                hopairs_per_image['person_trajectories'][i].view(-1, 4)[-1].view(1, -1)
+                            ], dim=0)
+                            o = torch.cat([
+                                hopairs_per_image['object_trajectories'][i].view(-1, 4)[0].view(1, -1),
+                                hopairs_per_image['object_trajectories'][i].view(-1, 4)[-1].view(1, -1)
+                            ], dim=0)
+                        except:
+                            # import pdb; pdb.set_trace()
+                            continue
                         
-                        s_c_x = (s[:, 0] + s[:, 2] / 2)
+                        try:
+                            s_c_x = (s[:, 0] + s[:, 2] / 2)
+                        except:
+                            # import pdb; pdb.set_trace()
+                            continue
                         s_c_y = (s[:, 1] + s[:, 3] / 2)
                         s_c_w = s[:, 2] - s[:, 0]
                         s_c_h = s[:, 3] - s[:, 1]
@@ -372,7 +395,11 @@ class HOIHead(nn.Module):
                         s_a = (torch.log(s_c_h * s_c_w / (o_c_w * o_c_h))).view(2, -1)
 
                         f_locs = torch.cat([s_x, s_y, s_w, s_h, s_a], dim=-1)
-                        f_mot = f_locs[1] - f_locs[0]
+                        try:
+                            f_mot = f_locs[1] - f_locs[0]
+                        except:
+                            # import pdb; pdb.set_trace()
+                            continue
                         spa_temp_feats.append(torch.cat([f_locs.view(-1), f_mot]).view(1, -1))
                     hopairs_per_image['spa_temp_feats'] = torch.cat(spa_temp_feats)
 
