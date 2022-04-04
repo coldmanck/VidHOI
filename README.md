@@ -88,6 +88,9 @@ Trained models are provided for performance verification purpose without running
 
 - `checkpoints.zip`: Final trained models' weights
 
+### Performance Validation
+For the ease of verifying models' performance, we have uploaded sample output json files of 2D/3D baselins and ST-HOI models [here](https://drive.google.com/drive/folders/1ONaZFOF5Kj0mxQZjl2F83vQxaz6jAQHE?usp=sharing) (under the `output` folder). One directly download these files and refer to [vidor_eval.ipynb](vidor_eval.ipynb) for evaluation and visualization.
+
 ## Experiments
 First, rename the folder `vidor-github` under `$ROOT/slowfast/dataset` to `vidor` before running any command. The following commands use ground truth `GT` (Oracle mode) by default. To use detected trajectories, refer to `NONGT` version of each model.
 
