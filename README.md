@@ -47,6 +47,9 @@ Please refer to Section 4.1 of [our paper](https://arxiv.org/pdf/2105.11731.pdf)
 First, download the original VidOR dataset and annotations from [the official website](https://xdshang.github.io/docs/vidor.html) and unzip to `$ROOT/slowfast/dataset/vidor-github`. To download VidHOI (i.e., HOI-specific) annotations, refer to files under the same folder in this repoistory, and for larger files, download them from [here](https://drive.google.com/drive/folders/1PGZ-5vGXphL5dgUWrlePZn5lQ2ejq62K?usp=sharing). 
 
 ### Files
+- Sampled frame lists
+  - `frame_lists/train.csv`
+  - `frame_lists/val.csv`
 - Human/object frame-wise annotations for training/validation
   - `train_frame_annots.json` 
   - `val_frame_annots.json`
