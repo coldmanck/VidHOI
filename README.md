@@ -87,9 +87,12 @@ Note that if you'd only like to testing with ground truth trajectories, you only
 Note that for the *Detection* results in Table 2, we evaluate the models (trained with ground truth boxes/trajectories) on detected boxes/trajectories. That's why we only need detected boxes/trajectories for VidHOI validation split.
 
 ### Checkpoints
-Trained models are provided for performance verification purpose without running training, and only 1 GPU is used during validation. Download the checkpoints from [here](https://drive.google.com/file/d/1p848ph27tOH1ODXPfIoLv59piMCexlfr/view?usp=sharing) and extract them under `$ROOT/checkpoints/`.
 
-- `checkpoints.zip`: Final trained models' weights
+[Aug. 21, 2022] The file is now unavailable due to limited cloud space.
+
+~~Trained models are provided for performance verification purpose without running training, and only 1 GPU is used during validation. Download the checkpoints from [here](https://drive.google.com/file/d/1p848ph27tOH1ODXPfIoLv59piMCexlfr/view?usp=sharing) and extract them under `$ROOT/checkpoints/`.~~
+
+~~- `checkpoints.zip`: Final trained models' weights~~
 
 ### Performance Validation
 For the ease of verifying models' performance, we have uploaded the output json files of 2D/3D baselins and ST-HOI models (evaluated with ground truth boxes) [here](https://drive.google.com/drive/folders/1ONaZFOF5Kj0mxQZjl2F83vQxaz6jAQHE?usp=sharing) (under the `output` folder). One may directly download these files and refer to [vidor_eval.ipynb](vidor_eval.ipynb) for evaluation and visualization.
