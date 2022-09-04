@@ -44,7 +44,7 @@ conda activate vidhoi
 ## Download VidHOI Benchmark
 Please refer to Section 4.1 of [our paper](https://arxiv.org/pdf/2105.11731.pdf) for more detail about the proposed benchmark.
 
-First, download the original VidOR dataset and annotations from [the official website](https://xdshang.github.io/docs/vidor.html) and unzip to `$ROOT/slowfast/dataset/vidor-github`. To download VidHOI (i.e., HOI-specific) annotations, refer to files under the same folder in this repoistory, and for larger files, download them from [here](https://drive.google.com/drive/folders/1PGZ-5vGXphL5dgUWrlePZn5lQ2ejq62K?usp=sharing). 
+First, download the original VidOR dataset and annotations from [the official website](https://xdshang.github.io/docs/vidor.html) and unzip to `$ROOT/slowfast/dataset/vidor-github`. To download VidHOI (i.e., HOI-specific) annotations, refer to files under the same folder in this repoistory, and for larger files, download them from [here](https://drive.google.com/drive/folders/0B94KbEj1tO9nfi05YmlvS1ctdWRxVVhISVQ5b2FQN293MTRhMzFNY1p4QWY0TzhQVkR4ekk?resourcekey=0-TwBoRuVnDeRZCpgzACYPsA&usp=sharing). 
 
 ### Files
 - Sampled frame lists
