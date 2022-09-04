@@ -70,7 +70,7 @@ to configs when starting a validation session.
 
 ## Download ST-HOI Baselines
 ### Files
-To reproduce results of ST-HOI baselines, please download essential files from [here](https://drive.google.com/drive/folders/1ONaZFOF5Kj0mxQZjl2F83vQxaz6jAQHE?usp=sharing) and put (after unzipping, if applicable) the files to the same folder (`vidor-github`) as above. 
+To reproduce results of ST-HOI baselines, please download essential files from [here](https://drive.google.com/drive/folders/0B94KbEj1tO9nflRoQWVoaFZ6QWEtVG1zSjk4TGtvVkVkU05lbndnNWpyR1JUdW1zZFRBb1E?resourcekey=0-PjvaqEprErIV0fBIxCFIbg&usp=sharing) and put (after unzipping, if applicable) the files to the same folder (`vidor-github`) as above. 
 
 Note that if you'd only like to testing with ground truth trajectories, you only need to download `human_poses.zip`!
 
@@ -95,7 +95,7 @@ Note that for the *Detection* results in Table 2, we evaluate the models (traine
 ~~- `checkpoints.zip`: Final trained models' weights~~
 
 ### Performance Validation
-For the ease of verifying models' performance, we have uploaded the output json files of 2D/3D baselins and ST-HOI models (evaluated with ground truth boxes) [here](https://drive.google.com/drive/folders/1ONaZFOF5Kj0mxQZjl2F83vQxaz6jAQHE?usp=sharing) (under the `output` folder). One may directly download these files and refer to [vidor_eval.ipynb](vidor_eval.ipynb) for evaluation and visualization.
+For the ease of verifying models' performance, we have uploaded the output json files of 2D/3D baselins and ST-HOI models (evaluated with ground truth boxes) [here](https://drive.google.com/drive/folders/0B94KbEj1tO9nflRoQWVoaFZ6QWEtVG1zSjk4TGtvVkVkU05lbndnNWpyR1JUdW1zZFRBb1E?resourcekey=0-PjvaqEprErIV0fBIxCFIbg&usp=sharing) (under the `output` folder). One may directly download these files and refer to [vidor_eval.ipynb](vidor_eval.ipynb) for evaluation and visualization.
 
 ## Experiments
 First, rename the folder `vidor-github` under `$ROOT/slowfast/dataset` to `vidor` before running any command. The following commands use ground truth `GT` (Oracle mode) by default. To use detected trajectories, refer to `NONGT` version of each model.
@@ -181,7 +181,7 @@ Generating Human Poses
 
 FastPose from [AlphaPose](https://github.com/MVIG-SJTU/AlphaPose) is used. One may choose to 
 - clone [AlphaPose](https://github.com/coldmanck/AlphaPose) to a separate directory, download the pretrained 2D human pose estimation model (e.g., `fast_res50_256x192.pth`) and put into `pretrained_models`; or
-- Download AlphaPose.zip from [google drive](https://drive.google.com/file/d/1R71xJhJw_VnYNJQJJ2KwU7Wehb1Th1it/view?usp=sharing) and unzip it to a separate directory
+- Download AlphaPose.zip from [google drive](https://drive.google.com/file/d/1UgmDayicuQd_QSXKkrwaoBmz9GZyuX6s/view?usp=sharing) and unzip it to a separate directory
 
 Then install and activate a new environment for AlphaPose following [the installation guide](https://github.com/coldmanck/AlphaPose/blob/master/docs/INSTALL.md), followed by running the commands:
 - Demo some pictures:
